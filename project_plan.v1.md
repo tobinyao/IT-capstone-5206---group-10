@@ -13,7 +13,7 @@
 | Week 7–8 | Mar 30 – Apr 11 | Core Development | Backend API, data integration, map interface, vulnerability model |
 | **Week 9–10** | **Apr 13 – Apr 25** | **✅ D2 Submission** | Submit D2 (27 Apr), functional testing, technical interviews |
 | Week 11–12 | Apr 27 – May 9 | Integration & Testing | System integration testing, bug fixes, deployment |
-| **Week 13** | **May 12 – May 16** | **✅ D3 Final Delivery** | Submit D2 (19 May), Final demo to client, professional documentation, peer feedback |
+| **Week 13** | **May 12 – May 16** | **✅ D3 Final Delivery** | Submit D2 (21 May), Final demo to client, professional documentation, peer feedback |
 
 ---
 
