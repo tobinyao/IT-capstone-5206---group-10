@@ -1,97 +1,73 @@
-# Fire Vulnerability Assessment Tool
-### CITS5206 Capstone Project — Group 10
+# React + TypeScript + Vite
 
-A web-based tool to assess the fire vulnerability of cultural heritage sites in the Franklin (FRK) and Albany (ALB) Districts of Western Australia.
+This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
----
+Currently, two official plugins are available:
 
-## Project Overview
+- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
+- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
 
-Western Australia's cultural heritage sites — including Aboriginal rock art, ochre mines, scarred trees, and historic buildings — face increasing risk from bushfires. This tool integrates heritage site data with environmental variables to classify each site's fire vulnerability as **Low**, **Medium**, or **High**, visualised through an interactive map interface.
+## React Compiler
 
-**Client:** Associate Professor Sven Ouzman & Sean Winter  
-**Facilitator:** Ella Zhang  
-**Team:** Group 10
+The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
 
----
+## Expanding the ESLint configuration
 
-## Features (MVP)
+If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
 
-- 🗺️ **Interactive Map** — Visualise heritage sites and their vulnerability levels across the study area
-- 📊 **Vulnerability Classification** — Three-tier risk model (Low / Medium / High) based on topography, vegetation, and wind conditions
-- 🏛️ **Heritage Data Integration** — Imports site data from ACHIS and Inherit registers
-- 📁 **Data Export** — Export assessment results to Excel format
-- ⚙️ **Configurable Sensitivity Parameters** — Adjustable settings for different heritage types (rock art, timber structures, ochre sites, etc.)
+```js
+export default defineConfig([
+  globalIgnores(['dist']),
+  {
+    files: ['**/*.{ts,tsx}'],
+    extends: [
+      // Other configs...
 
----
+      // Remove tseslint.configs.recommended and replace with this
+      tseslint.configs.recommendedTypeChecked,
+      // Alternatively, use this for stricter rules
+      tseslint.configs.strictTypeChecked,
+      // Optionally, add this for stylistic rules
+      tseslint.configs.stylisticTypeChecked,
 
-## Technology Stack
-
-| Layer | Technology |
-|---|---|
-| Frontend | HTML / CSS / JavaScript, Leaflet.js |
-| Backend | Python, Flask |
-| Data Processing | Pandas, GeoPandas |
-| Version Control | Git / GitHub (GitFlow) |
-| Project Management | GitHub Issues & Milestones, Kanban |
-
----
-
-## Team Members
-
-| Student Name | Student Number |
-|---|---|
-| Tobin Yao | 24134929 |
-| Shuo Ma | 23914891 |
-| Yonghe Hu | 24108102 |
-| Kunyang Xie | 24447687 |
-| Zeyu Wang | 23320288 |
-| Jue Hou | 24565925 |
-
----
-
-## Project Structure
-
-```
-IT-capstone-5206-group-10/
-├── docs/
-│   ├── meeting-notes/        # All meeting records
-│   ├── project-plan.md       # Timeline and milestones
-│   └── D1-report.docx        # D1 submission
-├── src/
-│   ├── frontend/             # Map interface and UI
-│   ├── backend/              # Flask API and scoring logic
-│   └── data/                 # Data processing scripts
-├── tests/                    # Test plans and scripts
-└── README.md
+      // Other configs...
+    ],
+    languageOptions: {
+      parserOptions: {
+        project: ['./tsconfig.node.json', './tsconfig.app.json'],
+        tsconfigRootDir: import.meta.dirname,
+      },
+      // other options...
+    },
+  },
+])
 ```
 
----
+You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
 
-## Getting Started
+```js
+// eslint.config.js
+import reactX from 'eslint-plugin-react-x'
+import reactDom from 'eslint-plugin-react-dom'
 
-### Prerequisites
-- Python 3.10+
-- pip
-
-### Installation
-
-```bash
-# Clone the repository
-git clone https://github.com/tobinyao/IT-capstone-5206---group-10.git
-cd IT-capstone-5206---group-10
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Run the application
-python src/backend/app.py
+export default defineConfig([
+  globalIgnores(['dist']),
+  {
+    files: ['**/*.{ts,tsx}'],
+    extends: [
+      // Other configs...
+      // Enable lint rules for React
+      reactX.configs['recommended-typescript'],
+      // Enable lint rules for React DOM
+      reactDom.configs.recommended,
+    ],
+    languageOptions: {
+      parserOptions: {
+        project: ['./tsconfig.node.json', './tsconfig.app.json'],
+        tsconfigRootDir: import.meta.dirname,
+      },
+      // other options...
+    },
+  },
+])
 ```
-
-Then open your browser and go to `http://localhost:5000`
-
----
-
-## License
-
-This project is developed for academic purposes as part of CITS5206 at the University of Western Australia.
