@@ -79,7 +79,7 @@ interface Site {
     }
   
     return (
-      <div className="px-8 py-8 bg-gray-100 min-h-full">
+      <div className="px-8 py-8 min-h-full" style={{ background: '#F0EDE8' }}>
   
         {/* Header */}
         <div className="flex justify-between items-center mb-6">

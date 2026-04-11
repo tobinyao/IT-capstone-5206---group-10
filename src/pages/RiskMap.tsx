@@ -6,7 +6,7 @@ const RiskMap = () => {
   const [graniteIndex, setGraniteIndex] = useState(40)
 
   return (
-    <div className="flex h-full">
+    <div className="flex h-full" style={{ background: '#F0EDE8' }}>
       {/* Left Panel */}
       <div className="w-72 bg-white border-r border-gray-200 flex flex-col px-6 py-6 overflow-y-auto flex-shrink-0">
         

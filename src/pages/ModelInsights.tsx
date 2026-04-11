@@ -136,7 +136,7 @@ import {
   
   const ModelInsights = () => {
     return (
-      <div className="flex flex-col px-8 py-8 overflow-y-auto bg-gray-100 h-full gap-4">
+      <div className="flex flex-col px-8 py-8 overflow-y-auto h-full gap-4" style={{ background: '#F0EDE8' }}>
   
         {/* Title */}
         <h1 className="text-3xl font-black text-center mb-2">Predictive Model Insights</h1>
