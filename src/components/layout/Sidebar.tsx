@@ -4,7 +4,7 @@ const navItems = [
   { section: 'Assessment', links: [
     { to: '/', label: 'Risk Map' },
     { to: '/insights', label: 'Model Insights' },
-    { to: '/regulation', label: 'Fire Regulation' },
+    { to: '/regulation', label: 'Fire Risk Regulation' },
   ]},
   { section: 'Data', links: [
     { to: '/registry', label: 'Heritage Registry' },
