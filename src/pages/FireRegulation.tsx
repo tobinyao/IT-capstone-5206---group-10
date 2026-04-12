@@ -1,6 +1,6 @@
 const FireRegulation = () => {
     return (
-      <div className="flex flex-col items-center px-12 py-10 h-full overflow-y-auto bg-white">
+      <div className="flex flex-col items-center px-12 py-10 h-full overflow-y-auto" style={{ background: '#F0EDE8' }}>
   
         {/* Title */}
         <h1 className="text-3xl font-black uppercase tracking-wide mb-12">
