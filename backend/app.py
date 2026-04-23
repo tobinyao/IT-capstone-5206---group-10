@@ -1,25 +1,32 @@
-from flask import Flask, request, jsonify
+from flask import Flask, jsonify
 from flask_cors import CORS
+
 from services.risk_model import calculate_risk
 from services.site_assessment import calculate_site_score, get_risk_level
 
+from pathlib import Path
+import json
+
 app = Flask(__name__)
 CORS(app)
+
+BASE_DIR = Path(__file__).resolve().parent
+METADATA_FILE = BASE_DIR / "data" / "metadata.json"
 
 @app.route("/", methods=["GET"])
 def home():
     return jsonify({"message": "Backend is running"})
 
-@app.route("/api/risk-assessment", methods=["POST"])
-def risk_assessment():
-    data = request.get_json()
-
-    slope = data.get("slope", 0)
-    fuel_age = data.get("fuelAge", 0)
-    granite_index = data.get("graniteIndex", 0)
-
-    result = calculate_risk(slope, fuel_age, granite_index)
-    return jsonify(result)
+@app.route("/api/metadata", methods=["GET"])
+def get_metadata():
+    try:
+        with open(METADATA_FILE, "r", encoding="utf-8") as f:
+            metadata = json.load(f)
+        return jsonify(metadata)
+    except FileNotFoundError:
+        return jsonify({"error": "metadata.json not found"}), 404
+    except json.JSONDecodeError:
+        return jsonify({"error": "metadata.json is invalid"}), 500
 
 @app.route("/api/site-assessment", methods=["POST"])
 def site_assessment():
