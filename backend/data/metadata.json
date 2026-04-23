@@ -1,0 +1,20 @@
+{
+  "score_formula": {
+    "heritage_vulnerability": {
+      "fuel_risk": 0.45,
+      "slope_risk": 0.25,
+      "heritage_type_material_risk": 0.25,
+      "burn_management_context": 0.05
+    },
+    "area_vulnerability": {
+      "fuel_risk": 0.55,
+      "slope_risk": 0.35,
+      "granite_influence": 0.10
+    }
+  },
+  "notes": [
+    "Base map is separate from overlays; overlays can be shown together.",
+    "Fire vulnerability grid is a prototype area layer using fuel, slope, and granite influence.",
+    "Heritage vulnerability uses fuel, slope, heritage sensitivity, and burn option context."
+  ]
+}
