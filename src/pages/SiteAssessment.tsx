@@ -78,13 +78,15 @@ const SiteAssessment = () => {
   const [slope, setSlope] = useState(28)
   const [fuelType, setFuelType] = useState<FuelType>('Forest')
   const [granite, setGranite] = useState(65)
-  const [wind, setWind] = useState(4)
 
   const slopeScore = Math.round((slope / 45) * 100)
   const fuelScore = FUEL_TYPE_SCORE[fuelType]
   const graniteScore = granite
-  const windScore = Math.round((wind / 5) * 100)
-  const totalScore = Math.round(slopeScore * 0.3 + fuelScore * 0.25 + graniteScore * 0.25 + windScore * 0.2)
+  // TODO(PO): final factor weights pending full vulnerability spec.
+  // Provisional values preserve the existing slope:fuel:granite ratio (6:5:5)
+  // after removing Wind (issue #15 / Q3 follow-up). Slope spec mandates 0.35;
+  // fuel/granite split of remaining 0.65 still needs PO confirmation.
+  const totalScore = Math.round(slopeScore * 0.375 + fuelScore * 0.3125 + graniteScore * 0.3125)
 
   const vulnerability = getVulnerability(totalScore)
   const circleStyle = getCircleStyle(vulnerability)
@@ -100,7 +102,6 @@ const SiteAssessment = () => {
       ['Slope', `${slope}°`],
       ['Fuel Type', fuelType],
       ['Granite Influence', `${granite}%`],
-      ['Wind Exposure', `${wind}/5`],
       ['Vulnerability Score', totalScore],
       ['Vulnerability Level', vulnerability],
     ]
@@ -226,18 +227,6 @@ const SiteAssessment = () => {
                 <div className="flex justify-between text-xs text-gray-300 mt-1"><span>0%</span><span>100%</span></div>
               </div>
 
-              {/* Wind */}
-              <div>
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-sm font-bold text-gray-700">Wind Exposure</span>
-                  <span className="text-xs font-extrabold text-[#8B2020] bg-red-50 px-2 py-0.5 rounded-md">{wind} / 5</span>
-                </div>
-                <input type="range" min={1} max={5} value={wind} step={1}
-                  onChange={(e) => setWind(Number(e.target.value))}
-                  className="w-full accent-[#8B2020] h-1 cursor-pointer" />
-                <div className="flex justify-between text-xs text-gray-300 mt-1"><span>Sheltered</span><span>Exposed</span></div>
-              </div>
-
             </div>
           </div>
         </div>
@@ -270,7 +259,6 @@ const SiteAssessment = () => {
                 { label: 'Slope', val: slopeScore },
                 { label: 'Fuel Type', val: fuelScore },
                 { label: 'Granite Influence', val: graniteScore },
-                { label: 'Wind', val: windScore },
               ].map((f) => (
                 <div key={f.label} className="flex items-center gap-3">
                   <span className="text-xs text-gray-500 w-28 flex-shrink-0">{f.label}</span>
