@@ -12,6 +12,19 @@ type HeritageType =
 type Source = 'ACHIS' | 'Inherit' | 'Field observation'
 type Vulnerability = 'High' | 'Medium' | 'Low'
 
+// NBIC Bushfire Fuel Classification — see "Fuel type attribute table" data source.
+// TODO(PO): confirm final class list and per-class risk weighting (issue #15).
+const FUEL_TYPES = ['Forest', 'Woodland', 'Shrubland', 'Heath', 'Mallee', 'Grassland'] as const
+type FuelType = typeof FUEL_TYPES[number]
+const FUEL_TYPE_SCORE: Record<FuelType, number> = {
+  Forest: 90,
+  Shrubland: 80,
+  Heath: 75,
+  Woodland: 70,
+  Mallee: 65,
+  Grassland: 50,
+}
+
 interface Action {
   text: string
   priority: 'Urgent' | 'High priority' | 'Standard'
@@ -63,12 +76,12 @@ const SiteAssessment = () => {
   const [heritageType, setHeritageType] = useState<HeritageType>('Rock art / petroglyphs')
   const [source, setSource] = useState<Source>('ACHIS')
   const [slope, setSlope] = useState(28)
-  const [fuelAge, setFuelAge] = useState(14)
+  const [fuelType, setFuelType] = useState<FuelType>('Forest')
   const [granite, setGranite] = useState(65)
   const [wind, setWind] = useState(4)
 
   const slopeScore = Math.round((slope / 45) * 100)
-  const fuelScore = Math.round((fuelAge / 30) * 100)
+  const fuelScore = FUEL_TYPE_SCORE[fuelType]
   const graniteScore = granite
   const windScore = Math.round((wind / 5) * 100)
   const totalScore = Math.round(slopeScore * 0.3 + fuelScore * 0.25 + graniteScore * 0.25 + windScore * 0.2)
@@ -85,8 +98,8 @@ const SiteAssessment = () => {
       ['Heritage Type', heritageType],
       ['Source', source],
       ['Slope', `${slope}°`],
-      ['Fuel Age', `${fuelAge} yrs`],
-      ['Granite Index', `${granite}%`],
+      ['Fuel Type', fuelType],
+      ['Granite Influence', `${granite}%`],
       ['Wind Exposure', `${wind}/5`],
       ['Vulnerability Score', totalScore],
       ['Vulnerability Level', vulnerability],
@@ -184,22 +197,27 @@ const SiteAssessment = () => {
                 <div className="flex justify-between text-xs text-gray-300 mt-1"><span>0°</span><span>45°</span></div>
               </div>
 
-              {/* Fuel Age */}
+              {/* Fuel Type */}
               <div>
                 <div className="flex justify-between items-center mb-2">
-                  <span className="text-sm font-bold text-gray-700">Vegetation (Fuel Age)</span>
-                  <span className="text-xs font-extrabold text-[#8B2020] bg-red-50 px-2 py-0.5 rounded-md">{fuelAge} yrs</span>
+                  <span className="text-sm font-bold text-gray-700">Vegetation (Fuel Type)</span>
+                  <span className="text-xs font-extrabold text-[#8B2020] bg-red-50 px-2 py-0.5 rounded-md">{fuelType}</span>
                 </div>
-                <input type="range" min={0} max={30} value={fuelAge} step={1}
-                  onChange={(e) => setFuelAge(Number(e.target.value))}
-                  className="w-full accent-[#8B2020] h-1 cursor-pointer" />
-                <div className="flex justify-between text-xs text-gray-300 mt-1"><span>0 yrs</span><span>30 yrs</span></div>
+                <select
+                  value={fuelType}
+                  onChange={(e) => setFuelType(e.target.value as FuelType)}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-700 bg-gray-50 outline-none focus:border-gray-400 focus:bg-white transition-colors cursor-pointer"
+                >
+                  {FUEL_TYPES.map((t) => (
+                    <option key={t} value={t}>{t}</option>
+                  ))}
+                </select>
               </div>
 
               {/* Granite */}
               <div>
                 <div className="flex justify-between items-center mb-2">
-                  <span className="text-sm font-bold text-gray-700">Granite (Outcrop Index)</span>
+                  <span className="text-sm font-bold text-gray-700">Granite Influence</span>
                   <span className="text-xs font-extrabold text-[#8B2020] bg-red-50 px-2 py-0.5 rounded-md">{granite}%</span>
                 </div>
                 <input type="range" min={0} max={100} value={granite} step={1}
@@ -250,12 +268,12 @@ const SiteAssessment = () => {
             <div className="flex flex-col gap-2.5">
               {[
                 { label: 'Slope', val: slopeScore },
-                { label: 'Fuel age', val: fuelScore },
-                { label: 'Granite', val: graniteScore },
+                { label: 'Fuel Type', val: fuelScore },
+                { label: 'Granite Influence', val: graniteScore },
                 { label: 'Wind', val: windScore },
               ].map((f) => (
                 <div key={f.label} className="flex items-center gap-3">
-                  <span className="text-xs text-gray-500 w-20 flex-shrink-0">{f.label}</span>
+                  <span className="text-xs text-gray-500 w-28 flex-shrink-0">{f.label}</span>
                   <div className="flex-1 h-1.5 bg-gray-800 rounded-full overflow-hidden">
                     <div className="h-full rounded-full transition-all duration-500"
                       style={{ width: `${f.val}%`, background: getFactorColor(f.val) }} />

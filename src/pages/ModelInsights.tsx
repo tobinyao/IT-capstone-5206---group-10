@@ -57,7 +57,7 @@ import {
   }
   
   const radarData = {
-    labels: ['Slope', 'Fuel Age', 'Vegetation Density', 'Granite', 'Recent Burn'],
+    labels: ['Slope', 'Heritage Type', 'Vegetation Type', 'Granite Influence', 'Recent Burn'],
     datasets: [
       {
         data: [8, 7, 6, 5, 7],
@@ -91,13 +91,13 @@ import {
   const scatterData = {
     datasets: [
       {
-        label: 'Granite',
+        label: 'Granite Influence',
         data: generatePoints(8),
         backgroundColor: '#CD853F',
         pointRadius: 6,
       },
       {
-        label: 'Fuel Age',
+        label: 'Heritage Type',
         data: generatePoints(8),
         backgroundColor: '#2E8B57',
         pointRadius: 6,
@@ -109,7 +109,7 @@ import {
         pointRadius: 6,
       },
       {
-        label: 'Vegetation Density',
+        label: 'Vegetation Type',
         data: generatePoints(8),
         backgroundColor: '#6ABF69',
         pointRadius: 6,
@@ -139,7 +139,7 @@ import {
       <div className="flex flex-col px-8 py-8 overflow-y-auto h-full gap-4" style={{ background: '#F0EDE8' }}>
   
         {/* Title */}
-        <h1 className="text-3xl font-black text-center mb-2">Predictive Model Insights</h1>
+        <h1 className="text-3xl font-black text-center mb-2">Heritage Fire Vulnerability Model Insights</h1>
   
         {/* Bar Chart */}
         <div className="bg-white rounded-xl p-6">
@@ -167,10 +167,10 @@ import {
             {/* Legend */}
             <div className="flex flex-wrap gap-4 mt-3">
               {[
-                { label: 'Granite', color: '#CD853F' },
-                { label: 'Fuel Age', color: '#2E8B57' },
+                { label: 'Granite Influence', color: '#CD853F' },
+                { label: 'Heritage Type', color: '#2E8B57' },
                 { label: 'Slope', color: '#DAA520' },
-                { label: 'Vegetation Density', color: '#6ABF69' },
+                { label: 'Vegetation Type', color: '#6ABF69' },
               ].map((item) => (
                 <div key={item.label} className="flex items-center gap-2">
                   <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }} />
