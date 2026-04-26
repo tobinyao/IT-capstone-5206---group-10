@@ -1,4 +1,4 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 from flask_cors import CORS
 
 from services.risk_model import calculate_risk
@@ -28,14 +28,43 @@ def get_metadata():
     except json.JSONDecodeError:
         return jsonify({"error": "metadata.json is invalid"}), 500
 
+def validate_score_input(data, field_name):
+    if field_name not in data:
+        return f"{field_name} is required"
+
+    value = data[field_name]
+
+    if not isinstance(value, (int, float)):
+        return f"{field_name} must be a number"
+
+    if value < 0 or value > 100:
+        return f"{field_name} must be between 0 and 100"
+
+    return None
+
 @app.route("/api/site-assessment", methods=["POST"])
 def site_assessment():
     data = request.get_json()
 
-    fuel = data.get("fuelRisk", 0)
-    slope = data.get("slopeRisk", 0)
-    heritage = data.get("heritageTypeRisk", 0)
-    burn = data.get("burnContext", 0)
+    if data is None:
+        return jsonify({"error": "Request body must be valid JSON"}), 400
+
+    required_fields = [
+        "fuelRisk",
+        "slopeRisk",
+        "heritageTypeRisk",
+        "burnContext"
+    ]
+
+    for field in required_fields:
+        error = validate_score_input(data, field)
+        if error:
+            return jsonify({"error": error}), 400
+
+    fuel = data["fuelRisk"]
+    slope = data["slopeRisk"]
+    heritage = data["heritageTypeRisk"]
+    burn = data["burnContext"]
 
     score = calculate_site_score(fuel, slope, heritage, burn)
     risk_level = get_risk_level(score)
