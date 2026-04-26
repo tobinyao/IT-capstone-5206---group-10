@@ -1,110 +1,479 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import L from 'leaflet'
+import 'leaflet/dist/leaflet.css'
 
-// NBIC Bushfire Fuel Classification — see "Fuel type attribute table" data source.
-// TODO(PO): confirm final class list and risk weighting (see issue #15).
-const FUEL_TYPES = ['Forest', 'Woodland', 'Shrubland', 'Heath', 'Mallee', 'Grassland'] as const
-type FuelType = typeof FUEL_TYPES[number]
+type RiskLevel = 'High' | 'Medium' | 'Low'
+
+type HeritageProperties = {
+  layer: string
+  name?: string
+  identifier?: string
+  heritage_kind?: string
+  vulnerability_level?: RiskLevel
+  vulnerability_score?: number
+  latitude?: number
+  longitude?: number
+  place_status?: string
+  place_type?: string
+  region?: string
+  fuel_class?: string
+  slope_degrees?: number | null
+}
+
+type Metadata = {
+  analysis_bounds_epsg_7844: [number, number, number, number]
+  raster_overlays: {
+    bounds_epsg_7844: [number, number, number, number]
+    classification?: {
+      low: string
+      medium: string
+      high: string
+    }
+    files: {
+      fire: string
+      fuel: string
+      slope: string
+    }
+  }
+  counts?: {
+    heritage_features?: number
+    burn_features?: number
+    granite_features?: number
+  }
+}
+
+type LayerName = 'fire' | 'heritage' | 'burn' | 'granite' | 'fuel' | 'slope'
+
+const DATA_PATH = '/data/processed/'
+
+const layerFiles = {
+  heritage: `${DATA_PATH}heritage_all_layer.geojson`,
+  burn: `${DATA_PATH}burn_options_layer.geojson`,
+  granite: `${DATA_PATH}granite_layer.geojson`,
+  metadata: `${DATA_PATH}metadata.json`,
+}
+
+const riskColours: Record<RiskLevel, string> = {
+  High: '#d2302a',
+  Medium: '#ebae26',
+  Low: '#14964b',
+}
 
 const RiskMap = () => {
-  const [slope, setSlope] = useState(15)
-  const [fuelType, setFuelType] = useState<FuelType>('Woodland')
-  const [graniteIndex, setGraniteIndex] = useState(40)
+  const mapElementRef = useRef<HTMLDivElement | null>(null)
+  const mapRef = useRef<L.Map | null>(null)
+  const layersRef = useRef<Partial<Record<LayerName, L.Layer>>>({})
+  const dataRef = useRef<{ heritage?: GeoJSON.FeatureCollection }>({})
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [selectedFeature, setSelectedFeature] = useState<HeritageProperties | null>(null)
+  const [metadata, setMetadata] = useState<Metadata | null>(null)
+  const [enabledLayers, setEnabledLayers] = useState<Record<LayerName, boolean>>({
+    fire: true,
+    heritage: true,
+    burn: false,
+    granite: false,
+    fuel: false,
+    slope: false,
+  })
+  const [heritageKind, setHeritageKind] = useState('all')
+  const [heritageRisk, setHeritageRisk] = useState('all')
+  const [summary, setSummary] = useState({ High: 0, Medium: 0, Low: 0 })
+
+  const riskColour = (level?: string) => {
+    return riskColours[level as RiskLevel] || '#667078'
+  }
+
+  const loadJson = async <T,>(path: string): Promise<T> => {
+    const response = await fetch(path)
+    if (!response.ok) {
+      throw new Error(`Could not load ${path}`)
+    }
+    return response.json()
+  }
+
+  const imageBounds = (meta: Metadata): L.LatLngBoundsExpression => {
+    const [west, south, east, north] = meta.raster_overlays.bounds_epsg_7844
+    return [
+      [south, west],
+      [north, east],
+    ]
+  }
+
+  const analysisBounds = (meta: Metadata): L.LatLngBoundsExpression => {
+    const [west, south, east, north] = meta.analysis_bounds_epsg_7844
+    return [
+      [south, west],
+      [north, east],
+    ]
+  }
+
+  const createMapPanes = (map: L.Map) => {
+    map.createPane('rasterPane')
+    const rasterPane = map.getPane('rasterPane')
+    if (rasterPane) {
+      rasterPane.style.zIndex = '350'
+      rasterPane.style.pointerEvents = 'none'
+    }
+
+    map.createPane('contextPane')
+    const contextPane = map.getPane('contextPane')
+    if (contextPane) contextPane.style.zIndex = '430'
+
+    map.createPane('heritagePane')
+    const heritagePane = map.getPane('heritagePane')
+    if (heritagePane) heritagePane.style.zIndex = '520'
+
+    map.createPane('heritageMarkerPane')
+    const markerPane = map.getPane('heritageMarkerPane')
+    if (markerPane) markerPane.style.zIndex = '650'
+  }
+
+  const buildHeritageLayer = (
+    heritageData: GeoJSON.FeatureCollection,
+    kindFilter: string,
+    riskFilter: string
+  ) => {
+    const filteredFeatures = heritageData.features.filter((feature) => {
+      const props = feature.properties as HeritageProperties
+      const kindOk = kindFilter === 'all' || props.heritage_kind === kindFilter
+      const riskOk = riskFilter === 'all' || props.vulnerability_level === riskFilter
+      return kindOk && riskOk
+    })
+
+    const counts = { High: 0, Medium: 0, Low: 0 }
+    filteredFeatures.forEach((feature) => {
+      const props = feature.properties as HeritageProperties
+      if (props.vulnerability_level && counts[props.vulnerability_level] !== undefined) {
+        counts[props.vulnerability_level] += 1
+      }
+    })
+    setSummary(counts)
+
+    const filteredCollection: GeoJSON.FeatureCollection = {
+  type: 'FeatureCollection',
+  features: filteredFeatures as GeoJSON.Feature[],
+}
+
+const polygons = L.geoJSON(
+  filteredCollection,
+  {
+        pane: 'heritagePane',
+        style: (feature) => {
+          const props = feature?.properties as HeritageProperties
+          return {
+            color: riskColour(props.vulnerability_level),
+            weight: 2.4,
+            opacity: 1,
+            fillColor: riskColour(props.vulnerability_level),
+            fillOpacity: 0.22,
+          }
+        },
+        onEachFeature: (feature, layer) => {
+          const props = feature.properties as HeritageProperties
+          layer.on('click', () => setSelectedFeature(props))
+          layer.bindPopup(`<strong>${props.name || props.identifier || 'Heritage place'}</strong><br>${props.heritage_kind || ''} heritage`)
+        },
+      }
+    )
+
+    const markers = L.layerGroup(
+      filteredFeatures
+        .map((feature) => feature.properties as HeritageProperties)
+        .filter((props) => props.latitude && props.longitude)
+        .map((props) => {
+          const marker = L.circleMarker([props.latitude as number, props.longitude as number], {
+            pane: 'heritageMarkerPane',
+            radius: props.vulnerability_level === 'High' ? 9 : 7,
+            color: '#ffffff',
+            weight: 2,
+            fillColor: riskColour(props.vulnerability_level),
+            fillOpacity: 0.98,
+          })
+          marker.on('click', () => setSelectedFeature(props))
+          marker.bindPopup(`<strong>${props.name || 'Heritage place'}</strong><br>${props.heritage_kind || ''} heritage`)
+          return marker
+        })
+    )
+
+    return L.layerGroup([polygons, markers])
+  }
+
+  useEffect(() => {
+    if (!mapElementRef.current || mapRef.current) return
+
+    let cancelled = false
+
+    const initialiseMap = async () => {
+      try {
+        const map = L.map(mapElementRef.current as HTMLDivElement, {
+          preferCanvas: true,
+          zoomControl: true,
+          dragging: true,
+          scrollWheelZoom: true,
+          doubleClickZoom: true,
+          boxZoom: true,
+          keyboard: true,
+          minZoom: 8,
+          maxZoom: 19,
+        }).setView([-34.7, 117.45], 9)
+
+        mapRef.current = map
+        createMapPanes(map)
+
+        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          maxZoom: 19,
+          crossOrigin: true,
+          attribution: '&copy; OpenStreetMap contributors',
+        }).addTo(map)
+
+        const [heritage, burn, granite, meta] = await Promise.all([
+          loadJson<GeoJSON.FeatureCollection>(layerFiles.heritage),
+          loadJson<GeoJSON.FeatureCollection>(layerFiles.burn),
+          loadJson<GeoJSON.FeatureCollection>(layerFiles.granite),
+          loadJson<Metadata>(layerFiles.metadata),
+        ])
+
+        if (cancelled) return
+
+        dataRef.current.heritage = heritage
+        setMetadata(meta)
+
+        layersRef.current.fire = L.imageOverlay(
+          `${DATA_PATH}${meta.raster_overlays.files.fire}`,
+          imageBounds(meta),
+          { opacity: 0.92, interactive: false, pane: 'rasterPane' }
+        )
+
+        layersRef.current.fuel = L.imageOverlay(
+          `${DATA_PATH}${meta.raster_overlays.files.fuel}`,
+          imageBounds(meta),
+          { opacity: 0.62, interactive: false, pane: 'rasterPane' }
+        )
+
+        layersRef.current.slope = L.imageOverlay(
+          `${DATA_PATH}${meta.raster_overlays.files.slope}`,
+          imageBounds(meta),
+          { opacity: 0.62, interactive: false, pane: 'rasterPane' }
+        )
+
+        layersRef.current.burn = L.geoJSON(burn, {
+          pane: 'contextPane',
+          style: {
+            color: '#167d94',
+            weight: 3,
+            opacity: 1,
+            fillColor: '#47a6b6',
+            fillOpacity: 0.16,
+            dashArray: '9 5',
+          },
+        })
+
+        layersRef.current.granite = L.geoJSON(granite, {
+          pane: 'contextPane',
+          style: {
+            color: '#2f3033',
+            weight: 2.2,
+            opacity: 0.95,
+            fillColor: '#6e684b',
+            fillOpacity: 0.44,
+          },
+        })
+
+        layersRef.current.heritage = buildHeritageLayer(heritage, heritageKind, heritageRisk)
+
+        L.rectangle(analysisBounds(meta), {
+          color: '#202124',
+          weight: 2,
+          fillOpacity: 0,
+          dashArray: '8 6',
+          pane: 'contextPane',
+        }).addTo(map)
+
+        map.fitBounds(analysisBounds(meta), { padding: [26, 26] })
+
+        setLoading(false)
+        setTimeout(() => map.invalidateSize(), 100)
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Could not load risk map data')
+        setLoading(false)
+      }
+    }
+
+    initialiseMap()
+
+    return () => {
+      cancelled = true
+      mapRef.current?.remove()
+      mapRef.current = null
+    }
+  }, [])
+
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map) return
+
+    Object.entries(layersRef.current).forEach(([name, layer]) => {
+      if (!layer) return
+      const shouldShow = enabledLayers[name as LayerName]
+      if (shouldShow && !map.hasLayer(layer)) layer.addTo(map)
+      if (!shouldShow && map.hasLayer(layer)) map.removeLayer(layer)
+    })
+  }, [enabledLayers, loading])
+
+  useEffect(() => {
+    const map = mapRef.current
+    const heritageData = dataRef.current.heritage
+    if (!map || !heritageData) return
+
+    const oldLayer = layersRef.current.heritage
+    if (oldLayer && map.hasLayer(oldLayer)) map.removeLayer(oldLayer)
+
+    const newLayer = buildHeritageLayer(heritageData, heritageKind, heritageRisk)
+    layersRef.current.heritage = newLayer
+
+    if (enabledLayers.heritage) {
+      newLayer.addTo(map)
+    }
+  }, [heritageKind, heritageRisk])
+
+  const toggleLayer = (layer: LayerName) => {
+    setEnabledLayers((current) => ({
+      ...current,
+      [layer]: !current[layer],
+    }))
+  }
 
   return (
-    <div className="flex h-full" style={{ background: '#F0EDE8' }}>
-      {/* Left Panel */}
-      <div className="w-72 bg-white border-r border-gray-200 flex flex-col px-6 py-6 overflow-y-auto flex-shrink-0">
-        
-        {/* Avatar + Title */}
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-black uppercase leading-tight tracking-tight">
-            Heritage Fire<br />Vulnerability<br />Model
-          </h1>
-          <div className="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center flex-shrink-0">
-            <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/>
-            </svg>
+    <div className="flex h-full min-h-screen bg-[#F0EDE8]">
+      <div className="w-80 bg-white border-r border-gray-200 flex flex-col px-6 py-6 overflow-y-auto flex-shrink-0">
+        <h1 className="text-2xl font-black uppercase leading-tight tracking-tight mb-2">
+          Heritage Fire<br />Vulnerability<br />Model
+        </h1>
+        <p className="text-sm text-gray-500 mb-6">
+          Interactive FRK risk map using the processed MVP fire vulnerability data.
+        </p>
+
+        <div className="mb-6">
+          <p className="font-bold text-base mb-3">Core Layers</p>
+          {([
+            ['fire', 'Fire vulnerability'],
+            ['heritage', 'Heritage places'],
+            ['burn', 'Burn options'],
+            ['granite', 'Granite influence'],
+            ['fuel', 'Fuel type'],
+            ['slope', 'Slope'],
+          ] as [LayerName, string][]).map(([key, label]) => (
+            <label key={key} className="flex items-center gap-3 text-sm mb-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={enabledLayers[key]}
+                onChange={() => toggleLayer(key)}
+                className="accent-[#8B2020]"
+              />
+              <span>{label}</span>
+            </label>
+          ))}
+        </div>
+
+        <div className="mb-6">
+          <p className="font-bold text-base mb-3">Heritage Type</p>
+          <select
+            value={heritageKind}
+            onChange={(event) => setHeritageKind(event.target.value)}
+            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-700 bg-gray-50"
+          >
+            <option value="all">All heritage</option>
+            <option value="Aboriginal">Aboriginal</option>
+            <option value="Non-Aboriginal">Non-Aboriginal</option>
+          </select>
+        </div>
+
+        <div className="mb-6">
+          <p className="font-bold text-base mb-3">Risk Level</p>
+          <select
+            value={heritageRisk}
+            onChange={(event) => setHeritageRisk(event.target.value)}
+            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-700 bg-gray-50"
+          >
+            <option value="all">All risk levels</option>
+            <option value="High">High</option>
+            <option value="Medium">Medium</option>
+            <option value="Low">Low</option>
+          </select>
+        </div>
+
+        <div className="mb-6 rounded-xl bg-gray-50 border border-gray-200 p-4">
+          <p className="font-bold text-base mb-3">Visible Heritage Summary</p>
+          <div className="grid grid-cols-3 gap-2 text-center text-sm">
+            <div>
+              <p className="font-bold text-[#d2302a]">{summary.High}</p>
+              <p className="text-gray-500">High</p>
+            </div>
+            <div>
+              <p className="font-bold text-[#ebae26]">{summary.Medium}</p>
+              <p className="text-gray-500">Medium</p>
+            </div>
+            <div>
+              <p className="font-bold text-[#14964b]">{summary.Low}</p>
+              <p className="text-gray-500">Low</p>
+            </div>
           </div>
         </div>
 
-        {/* Search */}
-        <div className="flex items-center gap-2 border border-gray-300 rounded-full px-4 py-2 mb-8 bg-gray-50">
-          <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
-          </svg>
-          <input
-            type="text"
-            placeholder="search"
-            className="bg-transparent text-sm outline-none w-full text-gray-600 placeholder-gray-400"
-          />
-        </div>
-
-        {/* Sliders */}
-        <div className="flex flex-col gap-8">
-
-          {/* Topography */}
-          <div>
-            <p className="font-bold text-base mb-3">Topography (Slope)</p>
-            <input
-              type="range"
-              min={0}
-              max={45}
-              value={slope}
-              onChange={(e) => setSlope(Number(e.target.value))}
-              className="w-full accent-[#8B2020] h-1 cursor-pointer"
-            />
-            <p className="text-right text-sm text-gray-500 mt-1">{slope}°</p>
-          </div>
-
-          {/* Vegetation */}
-          <div>
-            <p className="font-bold text-base mb-3">Vegetation (Fuel Type)</p>
-            <select
-              value={fuelType}
-              onChange={(e) => setFuelType(e.target.value as FuelType)}
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-700 bg-gray-50 outline-none focus:border-gray-400 focus:bg-white transition-colors cursor-pointer"
-            >
-              {FUEL_TYPES.map((t) => (
-                <option key={t} value={t}>{t}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Granite */}
-          <div>
-            <p className="font-bold text-base mb-3">Granite Influence</p>
-            <input
-              type="range"
-              min={0}
-              max={100}
-              value={graniteIndex}
-              onChange={(e) => setGraniteIndex(Number(e.target.value))}
-              className="w-full accent-[#8B2020] h-1 cursor-pointer"
-            />
-            <p className="text-right text-sm text-gray-500 mt-1">{graniteIndex}%</p>
-          </div>
-
-        </div>
-
-        {/* Legend */}
-        <div className="mt-10 flex flex-col gap-3">
-          <div className="flex items-center gap-3">
-            <div className="w-3 h-3 rounded-full bg-[#8B2020] flex-shrink-0" />
-            <span className="text-sm font-medium">At Risk ( &lt;100m )</span>
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="w-3 h-3 rounded-full bg-green-600 flex-shrink-0" />
-            <span className="text-sm font-medium">Low Risk ( &gt;100m )</span>
+        <div className="mb-6">
+          <p className="font-bold text-base mb-3">Classification</p>
+          <div className="text-xs text-gray-600 space-y-1">
+            <p>Low: {metadata?.raster_overlays.classification?.low || 'Loading'}</p>
+            <p>Medium: {metadata?.raster_overlays.classification?.medium || 'Loading'}</p>
+            <p>High: {metadata?.raster_overlays.classification?.high || 'Loading'}</p>
           </div>
         </div>
 
+        <div className="mt-auto rounded-xl bg-[#F7F2EA] border border-gray-200 p-4">
+          <p className="font-bold text-sm mb-2">Selected Feature</p>
+          {selectedFeature ? (
+            <div className="text-xs text-gray-600 space-y-1">
+              <p className="font-semibold text-gray-900">{selectedFeature.name || selectedFeature.identifier}</p>
+              <p>{selectedFeature.heritage_kind} heritage</p>
+              <p>{selectedFeature.vulnerability_level} vulnerability</p>
+              <p>Score: {selectedFeature.vulnerability_score ?? 'Unknown'}</p>
+              <p>Region: {selectedFeature.region || 'Unknown'}</p>
+            </div>
+          ) : (
+            <p className="text-xs text-gray-500">Click a heritage site on the map to view details.</p>
+          )}
+        </div>
       </div>
 
-      {/* Map placeholder */}
-      <div className="flex-1 bg-gray-100 flex items-center justify-center">
-        <p className="text-gray-400 text-sm">Map will be displayed here</p>
-      </div>
+      <div className="flex-1 relative">
+        <div ref={mapElementRef} className="h-full w-full min-h-screen" />
 
+        {loading && (
+          <div className="absolute inset-0 bg-white/80 flex items-center justify-center z-[1000]">
+            <p className="text-sm text-gray-600">Loading real FRK risk map...</p>
+          </div>
+        )}
+
+        {error && (
+          <div className="absolute top-6 left-6 right-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl z-[1000]">
+            {error}
+          </div>
+        )}
+
+        <div className="absolute bottom-6 right-6 bg-white rounded-xl shadow-lg border border-gray-200 px-4 py-3 z-[900]">
+          <p className="font-bold text-sm mb-2">Risk Legend</p>
+          <div className="flex items-center gap-2 text-xs mb-1">
+            <span className="w-3 h-3 rounded-full bg-[#d2302a]" /> High
+          </div>
+          <div className="flex items-center gap-2 text-xs mb-1">
+            <span className="w-3 h-3 rounded-full bg-[#ebae26]" /> Medium
+          </div>
+          <div className="flex items-center gap-2 text-xs">
+            <span className="w-3 h-3 rounded-full bg-[#14964b]" /> Low
+          </div>
+        </div>
+      </div>
     </div>
   )
 }
