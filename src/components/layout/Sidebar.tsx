@@ -52,7 +52,7 @@ const Sidebar = () => {
 
       {/* Footer */}
       <div className="px-4 py-3 border-t border-[#2A2A2A] text-[11px] text-gray-600">
-        Franklin District · FRK<br />v1.0 MVP
+        Franklin District · FRK<br />v1.0 Pilot
       </div>
     </aside>
   )

@@ -1,22 +1,25 @@
+// NBIC Bushfire Fuel Classification — see "Fuel type attribute table" data source.
+type FuelType = 'Forest' | 'Woodland' | 'Shrubland' | 'Heath' | 'Mallee' | 'Grassland'
+
 interface Site {
     id: string
     name: string
     heritageType: string
     source: 'ACHIS' | 'Inherit' | 'Field obs.'
     slope: number
-    fuelAge: number
+    fuelType: FuelType
     granite: number
     vulnerability: 'High' | 'Medium' | 'Low'
     assessedDate: string
   }
-  
+
   const mockSites: Site[] = [
-    { id: 'FRK-094', name: 'Bilya Mia Rock Shelter', heritageType: 'Rock art', source: 'ACHIS', slope: 28, fuelAge: 14, granite: 65, vulnerability: 'High', assessedDate: '2026-03-28' },
-    { id: 'FRK-108', name: 'Ngaook Ochre Quarry', heritageType: 'Ochre extraction', source: 'Inherit', slope: 22, fuelAge: 11, granite: 55, vulnerability: 'High', assessedDate: '2026-03-30' },
-    { id: 'FRK-113', name: 'Frankland River Timber', heritageType: 'Timber structures', source: 'Field obs.', slope: 12, fuelAge: 16, granite: 30, vulnerability: 'Medium', assessedDate: '2026-04-02' },
-    { id: 'FRK-114', name: 'Wudjari Scar Tree Grove', heritageType: 'Modified trees', source: 'ACHIS', slope: 10, fuelAge: 9, granite: 20, vulnerability: 'Medium', assessedDate: '2026-04-01' },
-    { id: 'FRK-115', name: 'Two Peoples Bay Stone', heritageType: 'Stone arrangement', source: 'Inherit', slope: 5, fuelAge: 3, granite: 10, vulnerability: 'Low', assessedDate: '2026-03-15' },
-    { id: 'FRK-116', name: 'Manypeaks Midden Complex', heritageType: 'Earthen midden', source: 'ACHIS', slope: 4, fuelAge: 4, granite: 8, vulnerability: 'Low', assessedDate: '2026-03-20' },
+    { id: 'FRK-094', name: 'Bilya Mia Rock Shelter', heritageType: 'Rock art', source: 'ACHIS', slope: 28, fuelType: 'Forest', granite: 65, vulnerability: 'High', assessedDate: '2026-03-28' },
+    { id: 'FRK-108', name: 'Ngaook Ochre Quarry', heritageType: 'Ochre extraction', source: 'Inherit', slope: 22, fuelType: 'Shrubland', granite: 55, vulnerability: 'High', assessedDate: '2026-03-30' },
+    { id: 'FRK-113', name: 'Frankland River Timber', heritageType: 'Timber structures', source: 'Field obs.', slope: 12, fuelType: 'Forest', granite: 30, vulnerability: 'Medium', assessedDate: '2026-04-02' },
+    { id: 'FRK-114', name: 'Wudjari Scar Tree Grove', heritageType: 'Modified trees', source: 'ACHIS', slope: 10, fuelType: 'Woodland', granite: 20, vulnerability: 'Medium', assessedDate: '2026-04-01' },
+    { id: 'FRK-115', name: 'Two Peoples Bay Stone', heritageType: 'Stone arrangement', source: 'Inherit', slope: 5, fuelType: 'Grassland', granite: 10, vulnerability: 'Low', assessedDate: '2026-03-15' },
+    { id: 'FRK-116', name: 'Manypeaks Midden Complex', heritageType: 'Earthen midden', source: 'ACHIS', slope: 4, fuelType: 'Grassland', granite: 8, vulnerability: 'Low', assessedDate: '2026-03-20' },
   ]
   
   const vulnerabilityPill = (v: Site['vulnerability']) => {
@@ -67,9 +70,9 @@ interface Site {
     const low = mockSites.filter((s) => s.vulnerability === 'Low').length
   
     const exportCSV = () => {
-      const headers = ['ID', 'Name', 'Heritage Type', 'Source', 'Slope', 'Fuel Age', 'Granite', 'Vulnerability', 'Assessed Date']
+      const headers = ['ID', 'Name', 'Heritage Type', 'Source', 'Slope', 'Fuel Type', 'Granite Influence', 'Vulnerability', 'Assessed Date']
       const rows = mockSites.map((s) =>
-        [s.id, s.name, s.heritageType, s.source, s.slope, s.fuelAge, s.granite, s.vulnerability, s.assessedDate].join(',')
+        [s.id, s.name, s.heritageType, s.source, s.slope, s.fuelType, s.granite, s.vulnerability, s.assessedDate].join(',')
       )
       const csv = [headers.join(','), ...rows].join('\n')
       const a = document.createElement('a')
@@ -157,7 +160,7 @@ interface Site {
           <table className="w-full text-sm">
             <thead className="bg-gray-50">
               <tr>
-                {['Site name', 'Heritage type', 'Source', 'Slope', 'Fuel age', 'Granite', 'Vulnerability', 'Assessed', ''].map((h) => (
+                {['Site name', 'Heritage type', 'Source', 'Slope', 'Fuel Type', 'Granite Influence', 'Vulnerability', 'Assessed', ''].map((h) => (
                   <th key={h} className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-gray-400">
                     {h}
                   </th>
@@ -181,7 +184,7 @@ interface Site {
                     <td className="px-4 py-3 text-gray-600">{site.heritageType}</td>
                     <td className="px-4 py-3">{sourceBadge(site.source)}</td>
                     <td className="px-4 py-3 text-gray-600">{site.slope}°</td>
-                    <td className="px-4 py-3 text-gray-600">{site.fuelAge} yr</td>
+                    <td className="px-4 py-3 text-gray-600">{site.fuelType}</td>
                     <td className="px-4 py-3 text-gray-600">{site.granite}%</td>
                     <td className="px-4 py-3">{vulnerabilityPill(site.vulnerability)}</td>
                     <td className="px-4 py-3 text-gray-400">{site.assessedDate}</td>
