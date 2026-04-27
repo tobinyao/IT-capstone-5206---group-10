@@ -1,28 +1,96 @@
 import { useState } from 'react'
 
+// Heritage Type / Material Risk categories per Heritage Vulnerability Score spec
+// (PO-provided model documentation, see team channel).
 type HeritageType =
-  | 'Rock art / petroglyphs'
-  | 'Ochre extraction site'
-  | 'Culturally modified trees'
-  | 'Timber structures'
-  | 'Artefact scatter'
-  | 'Earthen mound / midden'
-  | 'Stone arrangement'
+  | 'Modified tree / timber / wooden structure'
+  | 'Rock art / painting / engraving / rock shelter'
+  | 'Burial / grave / cemetery'
+  | 'Ceremonial / creation / dreaming / mythological place'
+  | 'General built heritage'
+  | 'Midden / organic deposit'
+  | 'Camp / historical place / water source'
+  | 'Artefact scatter / quarry / grinding area / sub-surface material'
+  | 'Brick / stone / masonry / concrete'
 
 type Source = 'ACHIS' | 'Inherit' | 'Field observation'
 type Vulnerability = 'High' | 'Medium' | 'Low'
 
-// NBIC Bushfire Fuel Classification — see "Fuel type attribute table" data source.
-// TODO(PO): confirm final class list and per-class risk weighting (issue #15).
-const FUEL_TYPES = ['Forest', 'Woodland', 'Shrubland', 'Heath', 'Mallee', 'Grassland'] as const
+// NBIC Bushfire Fuel Classification — class list and per-class fuel risk score
+// per Heritage Vulnerability Score spec (PO-provided model documentation).
+const FUEL_TYPES = [
+  'Tall closed forest',
+  'Closed forest',
+  'Pine plantation',
+  'Tall open forest',
+  'Tall shrubland',
+  'Open forest',
+  'Woodland with shrubby understory',
+  'Shrubland',
+  'Low woodland',
+  'Grassland',
+  'Sedgeland',
+  'Cropland',
+  'Wetland',
+  'Sparse grassland',
+  'Built-up',
+  'Bare ground',
+  'Water',
+] as const
 type FuelType = typeof FUEL_TYPES[number]
+
 const FUEL_TYPE_SCORE: Record<FuelType, number> = {
-  Forest: 90,
-  Shrubland: 80,
-  Heath: 75,
-  Woodland: 70,
-  Mallee: 65,
-  Grassland: 50,
+  'Tall closed forest': 100,
+  'Closed forest': 96,
+  'Pine plantation': 94,
+  'Tall open forest': 92,
+  'Tall shrubland': 88,
+  'Open forest': 86,
+  'Woodland with shrubby understory': 84,
+  'Shrubland': 82,
+  // TODO(PO): spec lists "Low woodland: 56–78" as a range; using midpoint 67
+  // pending confirmation whether this band should be subdivided.
+  'Low woodland': 67,
+  'Grassland': 62,
+  'Sedgeland': 58,
+  'Cropland': 50,
+  'Wetland': 35,
+  'Sparse grassland': 34,
+  'Built-up': 26,
+  'Bare ground': 12,
+  'Water': 5,
+}
+
+// Heritage Type / Material Risk per Heritage Vulnerability Score spec.
+const HERITAGE_TYPE_SCORE: Record<HeritageType, number> = {
+  'Modified tree / timber / wooden structure': 95,
+  'Rock art / painting / engraving / rock shelter': 86,
+  'Burial / grave / cemetery': 76,
+  'Ceremonial / creation / dreaming / mythological place': 72,
+  'General built heritage': 72,
+  'Midden / organic deposit': 62,
+  'Camp / historical place / water source': 60,
+  'Artefact scatter / quarry / grinding area / sub-surface material': 52,
+  'Brick / stone / masonry / concrete': 46,
+}
+
+// Slope Risk per Heritage Vulnerability Score spec.
+// Note: 15–25° band coefficient is 5.0 (not 3.5 from the original spec doc).
+// PO confirmed the smooth-transition variant so slope = 25° reaches 100 cleanly
+// instead of jumping from 85 to 100 just above 25°.
+const slopeRisk = (slope: number): number => {
+  if (slope <= 5) return 12
+  if (slope <= 15) return 12 + (slope - 5) * 3.8
+  if (slope <= 25) return 50 + (slope - 15) * 5.0
+  return 100
+}
+
+type SlopeLevel = 'Low' | 'Moderate' | 'Steep' | 'Very steep'
+const slopeLevel = (slope: number): SlopeLevel => {
+  if (slope <= 5) return 'Low'
+  if (slope <= 15) return 'Moderate'
+  if (slope <= 25) return 'Steep'
+  return 'Very steep'
 }
 
 interface Action {
@@ -31,9 +99,11 @@ interface Action {
   color: string
 }
 
+// Vulnerability level thresholds per spec (calibrated within the FRK study area;
+// High represents top ~5% of scores).
 const getVulnerability = (score: number): Vulnerability => {
-  if (score >= 60) return 'High'
-  if (score >= 35) return 'Medium'
+  if (score >= 64.2) return 'High'
+  if (score >= 48.3) return 'Medium'
   return 'Low'
 }
 
@@ -73,20 +143,24 @@ const getFactorColor = (val: number) => {
 const SiteAssessment = () => {
   const [siteName, setSiteName] = useState('')
   const [siteId, setSiteId] = useState('')
-  const [heritageType, setHeritageType] = useState<HeritageType>('Rock art / petroglyphs')
+  const [heritageType, setHeritageType] = useState<HeritageType>('Rock art / painting / engraving / rock shelter')
   const [source, setSource] = useState<Source>('ACHIS')
   const [slope, setSlope] = useState(28)
-  const [fuelType, setFuelType] = useState<FuelType>('Forest')
-  const [granite, setGranite] = useState(65)
+  const [fuelType, setFuelType] = useState<FuelType>('Open forest')
+  const [burnContext, setBurnContext] = useState(false)
 
-  const slopeScore = Math.round((slope / 45) * 100)
+  const slopeScore = slopeRisk(slope)
   const fuelScore = FUEL_TYPE_SCORE[fuelType]
-  const graniteScore = granite
-  // TODO(PO): final factor weights pending full vulnerability spec.
-  // Provisional values preserve the existing slope:fuel:granite ratio (6:5:5)
-  // after removing Wind (issue #15 / Q3 follow-up). Slope spec mandates 0.35;
-  // fuel/granite split of remaining 0.65 still needs PO confirmation.
-  const totalScore = Math.round(slopeScore * 0.375 + fuelScore * 0.3125 + graniteScore * 0.3125)
+  const heritageTypeScore = HERITAGE_TYPE_SCORE[heritageType]
+  const burnContextScore = burnContext ? 100 : 0
+
+  // Heritage Vulnerability Score formula per PO spec.
+  const totalScore = Math.round(
+    fuelScore * 0.45 +
+    slopeScore * 0.25 +
+    heritageTypeScore * 0.25 +
+    burnContextScore * 0.05
+  )
 
   const vulnerability = getVulnerability(totalScore)
   const circleStyle = getCircleStyle(vulnerability)
@@ -101,7 +175,7 @@ const SiteAssessment = () => {
       ['Source', source],
       ['Slope', `${slope}°`],
       ['Fuel Type', fuelType],
-      ['Granite Influence', `${granite}%`],
+      ['Burn Context', burnContext ? 'Inside DBCA proposed prescribed burn area' : 'Outside'],
       ['Vulnerability Score', totalScore],
       ['Vulnerability Level', vulnerability],
     ]
@@ -157,13 +231,15 @@ const SiteAssessment = () => {
                   onChange={(e) => setHeritageType(e.target.value as HeritageType)}
                   className="w-full px-3 py-2.5 border border-gray-100 rounded-lg text-sm text-gray-800 bg-gray-50 outline-none focus:border-gray-300 focus:bg-white transition-colors"
                 >
-                  <option>Rock art / petroglyphs</option>
-                  <option>Ochre extraction site</option>
-                  <option>Culturally modified trees</option>
-                  <option>Timber structures</option>
-                  <option>Artefact scatter</option>
-                  <option>Earthen mound / midden</option>
-                  <option>Stone arrangement</option>
+                  <option>Modified tree / timber / wooden structure</option>
+                  <option>Rock art / painting / engraving / rock shelter</option>
+                  <option>Burial / grave / cemetery</option>
+                  <option>Ceremonial / creation / dreaming / mythological place</option>
+                  <option>General built heritage</option>
+                  <option>Midden / organic deposit</option>
+                  <option>Camp / historical place / water source</option>
+                  <option>Artefact scatter / quarry / grinding area / sub-surface material</option>
+                  <option>Brick / stone / masonry / concrete</option>
                 </select>
               </div>
               <div>
@@ -190,7 +266,7 @@ const SiteAssessment = () => {
               <div>
                 <div className="flex justify-between items-center mb-2">
                   <span className="text-sm font-bold text-gray-700">Topography (Slope)</span>
-                  <span className="text-xs font-extrabold text-[#8B2020] bg-red-50 px-2 py-0.5 rounded-md">{slope}°</span>
+                  <span className="text-xs font-extrabold text-[#8B2020] bg-red-50 px-2 py-0.5 rounded-md">{slope}° · {slopeLevel(slope)}</span>
                 </div>
                 <input type="range" min={0} max={45} value={slope} step={1}
                   onChange={(e) => setSlope(Number(e.target.value))}
@@ -215,16 +291,25 @@ const SiteAssessment = () => {
                 </select>
               </div>
 
-              {/* Granite */}
+              {/* Burn Context */}
               <div>
                 <div className="flex justify-between items-center mb-2">
-                  <span className="text-sm font-bold text-gray-700">Granite Influence</span>
-                  <span className="text-xs font-extrabold text-[#8B2020] bg-red-50 px-2 py-0.5 rounded-md">{granite}%</span>
+                  <span className="text-sm font-bold text-gray-700">Burn Context</span>
+                  <span className="text-xs font-extrabold text-[#8B2020] bg-red-50 px-2 py-0.5 rounded-md">
+                    {burnContext ? 'Inside' : 'Outside'}
+                  </span>
                 </div>
-                <input type="range" min={0} max={100} value={granite} step={1}
-                  onChange={(e) => setGranite(Number(e.target.value))}
-                  className="w-full accent-[#8B2020] h-1 cursor-pointer" />
-                <div className="flex justify-between text-xs text-gray-300 mt-1"><span>0%</span><span>100%</span></div>
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={burnContext}
+                    onChange={(e) => setBurnContext(e.target.checked)}
+                    className="w-4 h-4 accent-[#8B2020] cursor-pointer"
+                  />
+                  <span className="text-sm text-gray-700">
+                    Inside DBCA proposed prescribed burn area
+                  </span>
+                </label>
               </div>
 
             </div>
@@ -256,9 +341,10 @@ const SiteAssessment = () => {
             <div className="text-xs font-extrabold uppercase tracking-widest text-gray-600 mb-3">Contributing factors</div>
             <div className="flex flex-col gap-2.5">
               {[
-                { label: 'Slope', val: slopeScore },
                 { label: 'Fuel Type', val: fuelScore },
-                { label: 'Granite Influence', val: graniteScore },
+                { label: 'Slope', val: slopeScore },
+                { label: 'Heritage Type', val: heritageTypeScore },
+                { label: 'Burn Context', val: burnContextScore },
               ].map((f) => (
                 <div key={f.label} className="flex items-center gap-3">
                   <span className="text-xs text-gray-500 w-28 flex-shrink-0">{f.label}</span>

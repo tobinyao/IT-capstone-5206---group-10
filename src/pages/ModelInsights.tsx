@@ -57,7 +57,7 @@ import {
   }
   
   const radarData = {
-    labels: ['Slope', 'Heritage Type', 'Vegetation Type', 'Granite Influence', 'Recent Burn'],
+    labels: ['Slope', 'Heritage Type', 'Vegetation Type', 'Granite Influence', 'Burn Context'],
     datasets: [
       {
         data: [8, 7, 6, 5, 7],

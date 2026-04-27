@@ -1,5 +1,8 @@
-// NBIC Bushfire Fuel Classification — see "Fuel type attribute table" data source.
-type FuelType = 'Forest' | 'Woodland' | 'Shrubland' | 'Heath' | 'Mallee' | 'Grassland'
+// NOTE: heritageType and fuelType are typed as `string` for display purposes.
+// The canonical union types live in SiteAssessment.tsx; mock data values
+// here are kept aligned with those by hand. A future refactor should extract
+// a shared scoring module (src/lib/scoring.ts) and reuse the unions in both
+// files so spec changes propagate automatically.
 
 interface Site {
     id: string
@@ -7,19 +10,87 @@ interface Site {
     heritageType: string
     source: 'ACHIS' | 'Inherit' | 'Field obs.'
     slope: number
-    fuelType: FuelType
-    granite: number
+    fuelType: string
+    burnContext: boolean
     vulnerability: 'High' | 'Medium' | 'Low'
     assessedDate: string
   }
 
+  // Vulnerability values below are pre-computed by hand using the Heritage
+  // Vulnerability Score formula:
+  //   round(fuel × 0.45 + slope × 0.25 + heritageType × 0.25 + burnContext × 0.05)
+  // with thresholds High ≥ 64.2, Medium ≥ 48.3, else Low.
+  // Heritage type mappings from earlier mock strings to the 9 spec categories
+  // ("Ochre extraction" → "Artefact scatter / quarry / …", "Stone arrangement"
+  // → "Ceremonial / creation / …") are judgment calls — please flag in review
+  // if a different mapping fits better.
   const mockSites: Site[] = [
-    { id: 'FRK-094', name: 'Bilya Mia Rock Shelter', heritageType: 'Rock art', source: 'ACHIS', slope: 28, fuelType: 'Forest', granite: 65, vulnerability: 'High', assessedDate: '2026-03-28' },
-    { id: 'FRK-108', name: 'Ngaook Ochre Quarry', heritageType: 'Ochre extraction', source: 'Inherit', slope: 22, fuelType: 'Shrubland', granite: 55, vulnerability: 'High', assessedDate: '2026-03-30' },
-    { id: 'FRK-113', name: 'Frankland River Timber', heritageType: 'Timber structures', source: 'Field obs.', slope: 12, fuelType: 'Forest', granite: 30, vulnerability: 'Medium', assessedDate: '2026-04-02' },
-    { id: 'FRK-114', name: 'Wudjari Scar Tree Grove', heritageType: 'Modified trees', source: 'ACHIS', slope: 10, fuelType: 'Woodland', granite: 20, vulnerability: 'Medium', assessedDate: '2026-04-01' },
-    { id: 'FRK-115', name: 'Two Peoples Bay Stone', heritageType: 'Stone arrangement', source: 'Inherit', slope: 5, fuelType: 'Grassland', granite: 10, vulnerability: 'Low', assessedDate: '2026-03-15' },
-    { id: 'FRK-116', name: 'Manypeaks Midden Complex', heritageType: 'Earthen midden', source: 'ACHIS', slope: 4, fuelType: 'Grassland', granite: 8, vulnerability: 'Low', assessedDate: '2026-03-20' },
+    {
+      id: 'FRK-094',
+      name: 'Bilya Mia Rock Shelter',
+      heritageType: 'Rock art / painting / engraving / rock shelter',
+      source: 'ACHIS',
+      slope: 28,
+      fuelType: 'Open forest',
+      burnContext: true,
+      vulnerability: 'High', // 90
+      assessedDate: '2026-03-28',
+    },
+    {
+      id: 'FRK-108',
+      name: 'Ngaook Ochre Quarry',
+      heritageType: 'Artefact scatter / quarry / grinding area / sub-surface material',
+      source: 'Inherit',
+      slope: 22,
+      fuelType: 'Shrubland',
+      burnContext: false,
+      vulnerability: 'High', // 71
+      assessedDate: '2026-03-30',
+    },
+    {
+      id: 'FRK-113',
+      name: 'Frankland River Timber',
+      heritageType: 'Modified tree / timber / wooden structure',
+      source: 'Field obs.',
+      slope: 12,
+      fuelType: 'Low woodland',
+      burnContext: false,
+      vulnerability: 'Medium', // 64
+      assessedDate: '2026-04-02',
+    },
+    {
+      id: 'FRK-114',
+      name: 'Wudjari Scar Tree Grove',
+      heritageType: 'Modified tree / timber / wooden structure',
+      source: 'ACHIS',
+      slope: 10,
+      fuelType: 'Low woodland',
+      burnContext: false,
+      vulnerability: 'Medium', // 62
+      assessedDate: '2026-04-01',
+    },
+    {
+      id: 'FRK-115',
+      name: 'Two Peoples Bay Stone',
+      heritageType: 'Ceremonial / creation / dreaming / mythological place',
+      source: 'Inherit',
+      slope: 5,
+      fuelType: 'Sparse grassland',
+      burnContext: false,
+      vulnerability: 'Low', // 36
+      assessedDate: '2026-03-15',
+    },
+    {
+      id: 'FRK-116',
+      name: 'Manypeaks Midden Complex',
+      heritageType: 'Midden / organic deposit',
+      source: 'ACHIS',
+      slope: 4,
+      fuelType: 'Grassland',
+      burnContext: false,
+      vulnerability: 'Low', // 46
+      assessedDate: '2026-03-20',
+    },
   ]
   
   const vulnerabilityPill = (v: Site['vulnerability']) => {
@@ -70,9 +141,9 @@ interface Site {
     const low = mockSites.filter((s) => s.vulnerability === 'Low').length
   
     const exportCSV = () => {
-      const headers = ['ID', 'Name', 'Heritage Type', 'Source', 'Slope', 'Fuel Type', 'Granite Influence', 'Vulnerability', 'Assessed Date']
+      const headers = ['ID', 'Name', 'Heritage Type', 'Source', 'Slope', 'Fuel Type', 'Burn Context', 'Vulnerability', 'Assessed Date']
       const rows = mockSites.map((s) =>
-        [s.id, s.name, s.heritageType, s.source, s.slope, s.fuelType, s.granite, s.vulnerability, s.assessedDate].join(',')
+        [s.id, s.name, s.heritageType, s.source, s.slope, s.fuelType, s.burnContext ? 'Inside' : 'Outside', s.vulnerability, s.assessedDate].join(',')
       )
       const csv = [headers.join(','), ...rows].join('\n')
       const a = document.createElement('a')
@@ -160,7 +231,7 @@ interface Site {
           <table className="w-full text-sm">
             <thead className="bg-gray-50">
               <tr>
-                {['Site name', 'Heritage type', 'Source', 'Slope', 'Fuel Type', 'Granite Influence', 'Vulnerability', 'Assessed', ''].map((h) => (
+                {['Site name', 'Heritage type', 'Source', 'Slope', 'Fuel Type', 'Burn Context', 'Vulnerability', 'Assessed', ''].map((h) => (
                   <th key={h} className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-gray-400">
                     {h}
                   </th>
@@ -185,7 +256,7 @@ interface Site {
                     <td className="px-4 py-3">{sourceBadge(site.source)}</td>
                     <td className="px-4 py-3 text-gray-600">{site.slope}°</td>
                     <td className="px-4 py-3 text-gray-600">{site.fuelType}</td>
-                    <td className="px-4 py-3 text-gray-600">{site.granite}%</td>
+                    <td className="px-4 py-3 text-gray-600">{site.burnContext ? 'Inside' : 'Outside'}</td>
                     <td className="px-4 py-3">{vulnerabilityPill(site.vulnerability)}</td>
                     <td className="px-4 py-3 text-gray-400">{site.assessedDate}</td>
                     <td className="px-4 py-3">
