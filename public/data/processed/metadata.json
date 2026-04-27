@@ -1,0 +1,91 @@
+{
+  "analysis_bounds_epsg_7844": [
+    116.89865494978103,
+    -35.203897765520026,
+    118.01203559541987,
+    -34.19577284590814
+  ],
+  "score_formula": {
+    "heritage_vulnerability": {
+      "fuel_risk": 0.45,
+      "slope_risk": 0.25,
+      "heritage_type_material_risk": 0.25,
+      "burn_management_context": 0.05
+    },
+    "area_vulnerability": {
+      "fuel_risk": 0.55,
+      "slope_risk": 0.35,
+      "granite_influence": 0.1
+    }
+  },
+  "source_files": {
+    "aboriginal_register_geojson": "/Users/tobinyao/Desktop/2026 s1/IT capstone/Aboriginal_Cultural_Heritage_Register_DPLH_099_WA_GDA2020_Public_Secure_GeoJSON/Aboriginal_Cultural_Heritage_Register_DPLH_099_WA_GDA2020_Public_Secure.geojson",
+    "aboriginal_lodged_geojson": "/Users/tobinyao/Desktop/2026 s1/IT capstone/Aboriginal_Cultural_Heritage_Lodged_DPLH_100_WA_GDA2020_Public_Secure_GeoJSON/Aboriginal_Cultural_Heritage_Lodged_DPLH_100_WA_GDA2020_Public_Secure.geojson",
+    "state_heritage_geojson": "/Users/tobinyao/Desktop/2026 s1/IT capstone/Heritage_Council_State_Register_DPLH_006_WA_GDA2020_Public_Secure_GeoJSON/Heritage_Council_State_Register_DPLH_006_WA_GDA2020_Public_Secure.geojson",
+    "burn_geojson": "/Users/tobinyao/Desktop/2026 s1/IT capstone/DBCA_Burn_Options_Program_DBCA_007_WA_GDA2020_Public_GeoJSON/DBCA_Burn_Options_Program_DBCA_007_WA_GDA2020_Public.geojson",
+    "geology_shp": "/Users/tobinyao/Desktop/2026 s1/IT capstone/GEOLOGY_500k_InterpretedBedrockGeology_GDA2020_SHP/ESRI/SHAPEFILES/500k_interpgeop.shp",
+    "slope_tif": "/Users/tobinyao/Desktop/2026 s1/IT capstone/Slope-cal/slope_FRK_output.tif",
+    "fuel_tif": "/Users/tobinyao/Desktop/2026 s1/IT capstone/fuel_type_cal/Bushfire fuel classification fuel types map release 2.tif"
+  },
+  "counts": {
+    "heritage_features": 268,
+    "heritage_kind": {
+      "Aboriginal": 167,
+      "Non-Aboriginal": 101
+    },
+    "heritage_levels": {
+      "Medium": 233,
+      "Low": 13,
+      "High": 22
+    },
+    "burn_features": 24,
+    "granite_features": 12,
+    "fuel_grid_cells": 1562,
+    "slope_grid_cells": 1782,
+    "fire_grid_cells": 1505,
+    "fire_grid_levels": {
+      "Medium": 1210,
+      "High": 77,
+      "Low": 218
+    },
+    "skipped_heritage": {
+      "Register:outside_analysis_area": 15112,
+      "Register:outside_wa_or_bad_coords": 1,
+      "Lodged:outside_analysis_area": 16540,
+      "Lodged:missing_geometry": 1390,
+      "State Register:outside_analysis_area": 2209
+    }
+  },
+  "raster_overlays": {
+    "bounds_epsg_7844": [
+      116.89865494978103,
+      -35.203897765520026,
+      118.01203559541987,
+      -34.19577284590814
+    ],
+    "width": 2200,
+    "height": 1992,
+    "approx_metres_per_pixel": 56.3,
+    "classification": {
+      "method": "FRK relative distribution using fuel, slope, and granite influence",
+      "low": "score < 48.3",
+      "medium": "48.3 <= score < 64.2",
+      "high": "score >= 64.2",
+      "target_high_area_percent": 5,
+      "target_low_area_percent": 35
+    },
+    "files": {
+      "fire": "fire_vulnerability_overlay.png",
+      "fuel": "fuel_type_overlay.png",
+      "slope": "slope_overlay.png"
+    }
+  },
+  "notes": [
+    "Base map is separate from overlays; overlays can be shown together.",
+    "Fuel class names come from NBIC ACS Stage 2 BFC Fuel Types Map attribute table release 2.",
+    "Fire vulnerability grid is a prototype area layer using fuel, slope, and granite influence.",
+    "Granite Influence is derived from granite-related interpreted bedrock geology polygons; it is geology context, not field-confirmed surface outcrop.",
+    "Heritage vulnerability uses fuel, slope, heritage sensitivity, and burn option context.",
+    "Burn options are management context, not live fire warning data."
+  ]
+}

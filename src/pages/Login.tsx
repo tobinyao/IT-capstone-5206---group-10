@@ -32,7 +32,7 @@ const Login = () => {
           {/* Feature bullets */}
           <div className="flex flex-col gap-3 mt-10">
             {[
-              'Predictive fire vulnerability modelling',
+              'Heritage Fire Vulnerability Model',
               'Heritage site registry — ACHIS & Inherit',
               'Franklin District (FRK) · Western Australia',
             ].map((item) => (

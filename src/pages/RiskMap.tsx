@@ -1,8 +1,13 @@
 import { useState } from 'react'
 
+// NBIC Bushfire Fuel Classification — see "Fuel type attribute table" data source.
+// TODO(PO): confirm final class list and risk weighting (see issue #15).
+const FUEL_TYPES = ['Forest', 'Woodland', 'Shrubland', 'Heath', 'Mallee', 'Grassland'] as const
+type FuelType = typeof FUEL_TYPES[number]
+
 const RiskMap = () => {
   const [slope, setSlope] = useState(15)
-  const [fuelAge, setFuelAge] = useState(12)
+  const [fuelType, setFuelType] = useState<FuelType>('Woodland')
   const [graniteIndex, setGraniteIndex] = useState(40)
 
   return (
@@ -13,7 +18,7 @@ const RiskMap = () => {
         {/* Avatar + Title */}
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-2xl font-black uppercase leading-tight tracking-tight">
-            Fire Risk<br />Predictive<br />Model
+            Heritage Fire<br />Vulnerability<br />Model
           </h1>
           <div className="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center flex-shrink-0">
             <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
@@ -53,21 +58,21 @@ const RiskMap = () => {
 
           {/* Vegetation */}
           <div>
-            <p className="font-bold text-base mb-3">Vegetation (Fuel Age)</p>
-            <input
-              type="range"
-              min={0}
-              max={30}
-              value={fuelAge}
-              onChange={(e) => setFuelAge(Number(e.target.value))}
-              className="w-full accent-[#8B2020] h-1 cursor-pointer"
-            />
-            <p className="text-right text-sm text-gray-500 mt-1">{fuelAge} yrs</p>
+            <p className="font-bold text-base mb-3">Vegetation (Fuel Type)</p>
+            <select
+              value={fuelType}
+              onChange={(e) => setFuelType(e.target.value as FuelType)}
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-700 bg-gray-50 outline-none focus:border-gray-400 focus:bg-white transition-colors cursor-pointer"
+            >
+              {FUEL_TYPES.map((t) => (
+                <option key={t} value={t}>{t}</option>
+              ))}
+            </select>
           </div>
 
           {/* Granite */}
           <div>
-            <p className="font-bold text-base mb-3">Granite (Outcrop Index)</p>
+            <p className="font-bold text-base mb-3">Granite Influence</p>
             <input
               type="range"
               min={0}
