@@ -147,16 +147,20 @@ const SiteAssessment = () => {
   const [source, setSource] = useState<Source>('ACHIS')
   const [slope, setSlope] = useState(28)
   const [fuelType, setFuelType] = useState<FuelType>('Open forest')
-  const [granite, setGranite] = useState(65)
+  const [burnContext, setBurnContext] = useState(false)
 
-  const slopeScore = Math.round((slope / 45) * 100)
+  const slopeScore = slopeRisk(slope)
   const fuelScore = FUEL_TYPE_SCORE[fuelType]
-  const graniteScore = granite
-  // TODO(PO): final factor weights pending full vulnerability spec.
-  // Provisional values preserve the existing slope:fuel:granite ratio (6:5:5)
-  // after removing Wind (issue #15 / Q3 follow-up). Slope spec mandates 0.35;
-  // fuel/granite split of remaining 0.65 still needs PO confirmation.
-  const totalScore = Math.round(slopeScore * 0.375 + fuelScore * 0.3125 + graniteScore * 0.3125)
+  const heritageTypeScore = HERITAGE_TYPE_SCORE[heritageType]
+  const burnContextScore = burnContext ? 100 : 0
+
+  // Heritage Vulnerability Score formula per PO spec.
+  const totalScore = Math.round(
+    fuelScore * 0.45 +
+    slopeScore * 0.25 +
+    heritageTypeScore * 0.25 +
+    burnContextScore * 0.05
+  )
 
   const vulnerability = getVulnerability(totalScore)
   const circleStyle = getCircleStyle(vulnerability)
@@ -171,7 +175,7 @@ const SiteAssessment = () => {
       ['Source', source],
       ['Slope', `${slope}°`],
       ['Fuel Type', fuelType],
-      ['Granite Influence', `${granite}%`],
+      ['Burn Context', burnContext ? 'Inside DBCA proposed prescribed burn area' : 'Outside'],
       ['Vulnerability Score', totalScore],
       ['Vulnerability Level', vulnerability],
     ]
@@ -227,13 +231,15 @@ const SiteAssessment = () => {
                   onChange={(e) => setHeritageType(e.target.value as HeritageType)}
                   className="w-full px-3 py-2.5 border border-gray-100 rounded-lg text-sm text-gray-800 bg-gray-50 outline-none focus:border-gray-300 focus:bg-white transition-colors"
                 >
-                  <option>Rock art / petroglyphs</option>
-                  <option>Ochre extraction site</option>
-                  <option>Culturally modified trees</option>
-                  <option>Timber structures</option>
-                  <option>Artefact scatter</option>
-                  <option>Earthen mound / midden</option>
-                  <option>Stone arrangement</option>
+                  <option>Modified tree / timber / wooden structure</option>
+                  <option>Rock art / painting / engraving / rock shelter</option>
+                  <option>Burial / grave / cemetery</option>
+                  <option>Ceremonial / creation / dreaming / mythological place</option>
+                  <option>General built heritage</option>
+                  <option>Midden / organic deposit</option>
+                  <option>Camp / historical place / water source</option>
+                  <option>Artefact scatter / quarry / grinding area / sub-surface material</option>
+                  <option>Brick / stone / masonry / concrete</option>
                 </select>
               </div>
               <div>
@@ -285,18 +291,6 @@ const SiteAssessment = () => {
                 </select>
               </div>
 
-              {/* Granite */}
-              <div>
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-sm font-bold text-gray-700">Granite Influence</span>
-                  <span className="text-xs font-extrabold text-[#8B2020] bg-red-50 px-2 py-0.5 rounded-md">{granite}%</span>
-                </div>
-                <input type="range" min={0} max={100} value={granite} step={1}
-                  onChange={(e) => setGranite(Number(e.target.value))}
-                  className="w-full accent-[#8B2020] h-1 cursor-pointer" />
-                <div className="flex justify-between text-xs text-gray-300 mt-1"><span>0%</span><span>100%</span></div>
-              </div>
-
             </div>
           </div>
         </div>
@@ -326,9 +320,10 @@ const SiteAssessment = () => {
             <div className="text-xs font-extrabold uppercase tracking-widest text-gray-600 mb-3">Contributing factors</div>
             <div className="flex flex-col gap-2.5">
               {[
-                { label: 'Slope', val: slopeScore },
                 { label: 'Fuel Type', val: fuelScore },
-                { label: 'Granite Influence', val: graniteScore },
+                { label: 'Slope', val: slopeScore },
+                { label: 'Heritage Type', val: heritageTypeScore },
+                { label: 'Burn Context', val: burnContextScore },
               ].map((f) => (
                 <div key={f.label} className="flex items-center gap-3">
                   <span className="text-xs text-gray-500 w-28 flex-shrink-0">{f.label}</span>
