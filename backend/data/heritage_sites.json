@@ -1,0 +1,77 @@
+[
+  {
+    "id": "FRK-094",
+    "name": "Bilya Mia Rock Shelter",
+    "heritageType": "Rock art / petroglyphs",
+    "source": "ACHIS",
+    "coordinates": {
+      "latitude": -34.95,
+      "longitude": 117.35
+    },
+    "slope": 28,
+    "fuelAge": 14,
+    "graniteIndex": 65,
+    "burnContext": 60,
+    "assessedDate": "2026-03-28"
+  },
+  {
+    "id": "FRK-108",
+    "name": "Ngaook Ochre Quarry",
+    "heritageType": "Ochre extraction site",
+    "source": "Inherit",
+    "coordinates": {
+      "latitude": -34.89,
+      "longitude": 117.42
+    },
+    "slope": 22,
+    "fuelAge": 11,
+    "graniteIndex": 55,
+    "burnContext": 55,
+    "assessedDate": "2026-03-30"
+  },
+  {
+    "id": "FRK-113",
+    "name": "Frankland River Timber",
+    "heritageType": "Timber structures",
+    "source": "Field observation",
+    "coordinates": {
+      "latitude": -34.72,
+      "longitude": 117.18
+    },
+    "slope": 12,
+    "fuelAge": 16,
+    "graniteIndex": 30,
+    "burnContext": 45,
+    "assessedDate": "2026-04-02"
+  },
+  {
+    "id": "FRK-114",
+    "name": "Wudjari Scar Tree Grove",
+    "heritageType": "Culturally modified trees",
+    "source": "ACHIS",
+    "coordinates": {
+      "latitude": -34.81,
+      "longitude": 117.27
+    },
+    "slope": 10,
+    "fuelAge": 9,
+    "graniteIndex": 20,
+    "burnContext": 35,
+    "assessedDate": "2026-04-01"
+  },
+  {
+    "id": "FRK-115",
+    "name": "Two Peoples Bay Stone",
+    "heritageType": "Stone arrangement",
+    "source": "Inherit",
+    "coordinates": {
+      "latitude": -34.99,
+      "longitude": 117.92
+    },
+    "slope": 5,
+    "fuelAge": 3,
+    "graniteIndex": 10,
+    "burnContext": 20,
+    "assessedDate": "2026-03-15"
+  }
+]
