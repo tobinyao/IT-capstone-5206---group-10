@@ -1,28 +1,96 @@
 import { useState } from 'react'
 
+// Heritage Type / Material Risk categories per Heritage Vulnerability Score spec
+// (PO-provided model documentation, see team channel).
 type HeritageType =
-  | 'Rock art / petroglyphs'
-  | 'Ochre extraction site'
-  | 'Culturally modified trees'
-  | 'Timber structures'
-  | 'Artefact scatter'
-  | 'Earthen mound / midden'
-  | 'Stone arrangement'
+  | 'Modified tree / timber / wooden structure'
+  | 'Rock art / painting / engraving / rock shelter'
+  | 'Burial / grave / cemetery'
+  | 'Ceremonial / creation / dreaming / mythological place'
+  | 'General built heritage'
+  | 'Midden / organic deposit'
+  | 'Camp / historical place / water source'
+  | 'Artefact scatter / quarry / grinding area / sub-surface material'
+  | 'Brick / stone / masonry / concrete'
 
 type Source = 'ACHIS' | 'Inherit' | 'Field observation'
 type Vulnerability = 'High' | 'Medium' | 'Low'
 
-// NBIC Bushfire Fuel Classification — see "Fuel type attribute table" data source.
-// TODO(PO): confirm final class list and per-class risk weighting (issue #15).
-const FUEL_TYPES = ['Forest', 'Woodland', 'Shrubland', 'Heath', 'Mallee', 'Grassland'] as const
+// NBIC Bushfire Fuel Classification — class list and per-class fuel risk score
+// per Heritage Vulnerability Score spec (PO-provided model documentation).
+const FUEL_TYPES = [
+  'Tall closed forest',
+  'Closed forest',
+  'Pine plantation',
+  'Tall open forest',
+  'Tall shrubland',
+  'Open forest',
+  'Woodland with shrubby understory',
+  'Shrubland',
+  'Low woodland',
+  'Grassland',
+  'Sedgeland',
+  'Cropland',
+  'Wetland',
+  'Sparse grassland',
+  'Built-up',
+  'Bare ground',
+  'Water',
+] as const
 type FuelType = typeof FUEL_TYPES[number]
+
 const FUEL_TYPE_SCORE: Record<FuelType, number> = {
-  Forest: 90,
-  Shrubland: 80,
-  Heath: 75,
-  Woodland: 70,
-  Mallee: 65,
-  Grassland: 50,
+  'Tall closed forest': 100,
+  'Closed forest': 96,
+  'Pine plantation': 94,
+  'Tall open forest': 92,
+  'Tall shrubland': 88,
+  'Open forest': 86,
+  'Woodland with shrubby understory': 84,
+  'Shrubland': 82,
+  // TODO(PO): spec lists "Low woodland: 56–78" as a range; using midpoint 67
+  // pending confirmation whether this band should be subdivided.
+  'Low woodland': 67,
+  'Grassland': 62,
+  'Sedgeland': 58,
+  'Cropland': 50,
+  'Wetland': 35,
+  'Sparse grassland': 34,
+  'Built-up': 26,
+  'Bare ground': 12,
+  'Water': 5,
+}
+
+// Heritage Type / Material Risk per Heritage Vulnerability Score spec.
+const HERITAGE_TYPE_SCORE: Record<HeritageType, number> = {
+  'Modified tree / timber / wooden structure': 95,
+  'Rock art / painting / engraving / rock shelter': 86,
+  'Burial / grave / cemetery': 76,
+  'Ceremonial / creation / dreaming / mythological place': 72,
+  'General built heritage': 72,
+  'Midden / organic deposit': 62,
+  'Camp / historical place / water source': 60,
+  'Artefact scatter / quarry / grinding area / sub-surface material': 52,
+  'Brick / stone / masonry / concrete': 46,
+}
+
+// Slope Risk per Heritage Vulnerability Score spec.
+// Note: 15–25° band coefficient is 5.0 (not 3.5 from the original spec doc).
+// PO confirmed the smooth-transition variant so slope = 25° reaches 100 cleanly
+// instead of jumping from 85 to 100 just above 25°.
+const slopeRisk = (slope: number): number => {
+  if (slope <= 5) return 12
+  if (slope <= 15) return 12 + (slope - 5) * 3.8
+  if (slope <= 25) return 50 + (slope - 15) * 5.0
+  return 100
+}
+
+type SlopeLevel = 'Low' | 'Moderate' | 'Steep' | 'Very steep'
+const slopeLevel = (slope: number): SlopeLevel => {
+  if (slope <= 5) return 'Low'
+  if (slope <= 15) return 'Moderate'
+  if (slope <= 25) return 'Steep'
+  return 'Very steep'
 }
 
 interface Action {
@@ -31,9 +99,11 @@ interface Action {
   color: string
 }
 
+// Vulnerability level thresholds per spec (calibrated within the FRK study area;
+// High represents top ~5% of scores).
 const getVulnerability = (score: number): Vulnerability => {
-  if (score >= 60) return 'High'
-  if (score >= 35) return 'Medium'
+  if (score >= 64.2) return 'High'
+  if (score >= 48.3) return 'Medium'
   return 'Low'
 }
 
@@ -73,10 +143,10 @@ const getFactorColor = (val: number) => {
 const SiteAssessment = () => {
   const [siteName, setSiteName] = useState('')
   const [siteId, setSiteId] = useState('')
-  const [heritageType, setHeritageType] = useState<HeritageType>('Rock art / petroglyphs')
+  const [heritageType, setHeritageType] = useState<HeritageType>('Rock art / painting / engraving / rock shelter')
   const [source, setSource] = useState<Source>('ACHIS')
   const [slope, setSlope] = useState(28)
-  const [fuelType, setFuelType] = useState<FuelType>('Forest')
+  const [fuelType, setFuelType] = useState<FuelType>('Open forest')
   const [granite, setGranite] = useState(65)
 
   const slopeScore = Math.round((slope / 45) * 100)
