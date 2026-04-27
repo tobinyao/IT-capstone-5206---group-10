@@ -1,14 +1,36 @@
 import { useState } from 'react'
 
-// NBIC Bushfire Fuel Classification — see "Fuel type attribute table" data source.
-// TODO(PO): confirm final class list and risk weighting (see issue #15).
-const FUEL_TYPES = ['Forest', 'Woodland', 'Shrubland', 'Heath', 'Mallee', 'Grassland'] as const
+// NBIC Bushfire Fuel Classification — class list per Area Fire Vulnerability
+// spec (PO-provided model documentation). Same canonical list as SiteAssessment.
+const FUEL_TYPES = [
+  'Tall closed forest',
+  'Closed forest',
+  'Pine plantation',
+  'Tall open forest',
+  'Tall shrubland',
+  'Open forest',
+  'Woodland with shrubby understory',
+  'Shrubland',
+  'Low woodland',
+  'Grassland',
+  'Sedgeland',
+  'Cropland',
+  'Wetland',
+  'Sparse grassland',
+  'Built-up',
+  'Bare ground',
+  'Water',
+] as const
 type FuelType = typeof FUEL_TYPES[number]
 
 const RiskMap = () => {
   const [slope, setSlope] = useState(15)
-  const [fuelType, setFuelType] = useState<FuelType>('Woodland')
-  const [graniteIndex, setGraniteIndex] = useState(40)
+  const [fuelType, setFuelType] = useState<FuelType>('Open forest')
+  // Granite Influence is binary per Area Fire Vulnerability spec
+  // (inside granite-related geology polygon = 100, outside = 0).
+  // Will eventually be derived from spatial overlap with the granite layer
+  // rather than a manual toggle, but exposing it as a checkbox for now.
+  const [granite, setGranite] = useState(false)
 
   return (
     <div className="flex h-full" style={{ background: '#F0EDE8' }}>
@@ -73,15 +95,20 @@ const RiskMap = () => {
           {/* Granite */}
           <div>
             <p className="font-bold text-base mb-3">Granite Influence</p>
-            <input
-              type="range"
-              min={0}
-              max={100}
-              value={graniteIndex}
-              onChange={(e) => setGraniteIndex(Number(e.target.value))}
-              className="w-full accent-[#8B2020] h-1 cursor-pointer"
-            />
-            <p className="text-right text-sm text-gray-500 mt-1">{graniteIndex}%</p>
+            <label className="flex items-center gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={granite}
+                onChange={(e) => setGranite(e.target.checked)}
+                className="w-4 h-4 accent-[#8B2020] cursor-pointer"
+              />
+              <span className="text-sm text-gray-700">
+                Inside granite-related geology polygon
+              </span>
+            </label>
+            <p className="text-xs text-gray-400 mt-1">
+              Geology context — useful for predicting rock art locations
+            </p>
           </div>
 
         </div>
