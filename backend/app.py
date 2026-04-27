@@ -1,7 +1,6 @@
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 
-from services.risk_model import calculate_risk
 from services.site_assessment import calculate_site_score, get_risk_level
 
 from pathlib import Path

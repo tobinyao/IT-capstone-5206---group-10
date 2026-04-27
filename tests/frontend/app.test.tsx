@@ -10,6 +10,7 @@ describe('App', () => {
     expect(sidebar).not.toBeNull()
     expect(sidebar).toHaveTextContent(/Fire Vulnerability\s*Assessment Tool/)
     expect(screen.getByText('Risk Map')).toBeInTheDocument()
-    expect(screen.getByText('Map will be displayed here')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'FireWatch Heritage map' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Map Layers' })).toBeInTheDocument()
   })
 })
