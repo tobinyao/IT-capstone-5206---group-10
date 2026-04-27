@@ -5,6 +5,7 @@ type RiskLevel = 'High' | 'Medium' | 'Low'
 type HeritageKindFilter = 'all' | 'Aboriginal' | 'Non-Aboriginal'
 type HeritageRiskFilter = 'all' | RiskLevel
 type LayerName = 'fire' | 'heritage' | 'burn' | 'granite' | 'fuel' | 'slope'
+type BaseMapType = 'osm' | 'satellite'
 
 type Metric = {
   label: string
@@ -199,6 +200,7 @@ function getHeritageMarkerPosition(feature: GeoFeature, properties: HeritageProp
 function RiskMap() {
   const mapElementRef = useRef<HTMLDivElement | null>(null)
   const mapRef = useRef<any>(null)
+  const baseLayerRefs = useRef<Partial<Record<BaseMapType, any>>>({})
   const studyAreaLayerRef = useRef<any>(null)
   const studyAreaLabelRef = useRef<any>(null)
   const layerRefs = useRef<Partial<Record<LayerName, any>>>({})
@@ -216,6 +218,7 @@ function RiskMap() {
   })
   const [details, setDetails] = useState<DetailState>(defaultDetails)
   const [visibleLayers, setVisibleLayers] = useState<ToggleState>(defaultLayerVisibility)
+  const [baseMapType, setBaseMapType] = useState<BaseMapType>('osm')
   const [heritageRiskFilter, setHeritageRiskFilter] = useState<HeritageRiskFilter>('all')
   const [heritageKindFilter, setHeritageKindFilter] = useState<HeritageKindFilter>('all')
 
@@ -323,19 +326,53 @@ function RiskMap() {
     map.createPane('heritageMarkerPane')
     map.getPane('heritageMarkerPane').style.zIndex = '650'
 
-    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    const openStreetMapLayer = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
       crossOrigin: true,
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-    }).addTo(map)
+    })
+
+    const satelliteLayer = L.tileLayer(
+      'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+      {
+        maxZoom: 19,
+        crossOrigin: true,
+        attribution: 'Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics, and the GIS User Community',
+      }
+    )
+
+    baseLayerRefs.current = {
+      osm: openStreetMapLayer,
+      satellite: satelliteLayer,
+    }
+
+    openStreetMapLayer.addTo(map)
 
     mapRef.current = map
 
     return () => {
       map.remove()
       mapRef.current = null
+      baseLayerRefs.current = {}
     }
   }, [leafletReady])
+
+  useEffect(() => {
+    if (!leafletReady || !mapRef.current) return
+
+    const map = mapRef.current
+    const nextLayer = baseLayerRefs.current[baseMapType]
+
+    if (!nextLayer) return
+
+    ;(Object.entries(baseLayerRefs.current) as Array<[BaseMapType, any]>).forEach(([, layer]) => {
+      if (layer && map.hasLayer(layer)) {
+        map.removeLayer(layer)
+      }
+    })
+
+    nextLayer.addTo(map)
+  }, [leafletReady, baseMapType])
 
   useEffect(() => {
     if (
@@ -637,6 +674,26 @@ function RiskMap() {
               {label}
             </label>
           ))}
+        </section>
+
+        <section className="firewatch-card" aria-label="Base map selection">
+          <h2>Base Map</h2>
+          <div className="firewatch-button-row">
+            <button
+              type="button"
+              className={`firewatch-filter-button ${baseMapType === 'osm' ? 'is-active' : ''}`}
+              onClick={() => setBaseMapType('osm')}
+            >
+              OpenStreetMap
+            </button>
+            <button
+              type="button"
+              className={`firewatch-filter-button ${baseMapType === 'satellite' ? 'is-active' : ''}`}
+              onClick={() => setBaseMapType('satellite')}
+            >
+              Satellite
+            </button>
+          </div>
         </section>
 
         <section className="firewatch-card" aria-label="Layer colour key">
