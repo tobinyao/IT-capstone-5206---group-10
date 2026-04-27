@@ -1,0 +1,83 @@
+{
+  "type": "FeatureCollection",
+  "name": "burn_options_sample",
+  "metadata": {
+    "description": "Sample burn option polygons for MVP processed data structure.",
+    "coordinateStatus": "sample",
+    "sensitive": false
+  },
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BURN-001",
+        "name": "North Frankland planned burn option",
+        "burnContext": "planned_burn_overlap",
+        "burnContextRisk": 90
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              117.30,
+              -34.98
+            ],
+            [
+              117.46,
+              -34.98
+            ],
+            [
+              117.46,
+              -34.86
+            ],
+            [
+              117.30,
+              -34.86
+            ],
+            [
+              117.30,
+              -34.98
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "BURN-002",
+        "name": "South coastal burn management area",
+        "burnContext": "near_burn_option",
+        "burnContextRisk": 45
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              117.10,
+              -34.78
+            ],
+            [
+              117.25,
+              -34.78
+            ],
+            [
+              117.25,
+              -34.66
+            ],
+            [
+              117.10,
+              -34.66
+            ],
+            [
+              117.10,
+              -34.78
+            ]
+          ]
+        ]
+      }
+    }
+  ]
+}
