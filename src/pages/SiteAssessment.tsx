@@ -266,7 +266,7 @@ const SiteAssessment = () => {
               <div>
                 <div className="flex justify-between items-center mb-2">
                   <span className="text-sm font-bold text-gray-700">Topography (Slope)</span>
-                  <span className="text-xs font-extrabold text-[#8B2020] bg-red-50 px-2 py-0.5 rounded-md">{slope}°</span>
+                  <span className="text-xs font-extrabold text-[#8B2020] bg-red-50 px-2 py-0.5 rounded-md">{slope}° · {slopeLevel(slope)}</span>
                 </div>
                 <input type="range" min={0} max={45} value={slope} step={1}
                   onChange={(e) => setSlope(Number(e.target.value))}
@@ -289,6 +289,27 @@ const SiteAssessment = () => {
                     <option key={t} value={t}>{t}</option>
                   ))}
                 </select>
+              </div>
+
+              {/* Burn Context */}
+              <div>
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-sm font-bold text-gray-700">Burn Context</span>
+                  <span className="text-xs font-extrabold text-[#8B2020] bg-red-50 px-2 py-0.5 rounded-md">
+                    {burnContext ? 'Inside' : 'Outside'}
+                  </span>
+                </div>
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={burnContext}
+                    onChange={(e) => setBurnContext(e.target.checked)}
+                    className="w-4 h-4 accent-[#8B2020] cursor-pointer"
+                  />
+                  <span className="text-sm text-gray-700">
+                    Inside DBCA proposed prescribed burn area
+                  </span>
+                </label>
               </div>
 
             </div>
