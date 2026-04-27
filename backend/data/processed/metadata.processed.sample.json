@@ -1,0 +1,67 @@
+{
+  "version": "mvp-sample",
+  "coordinateReferenceSystem": "EPSG:4326",
+  "coordinateStatus": "sample_or_anonymised",
+  "layers": {
+    "heritage_sites": {
+      "path": "geojson/heritage_sites.sample.geojson",
+      "type": "GeoJSON",
+      "geometry": "Point",
+      "recordCount": 3,
+      "sensitive": true,
+      "notes": "Sample/anonymised heritage site points for MVP data structure only."
+    },
+    "burn_options": {
+      "path": "geojson/burn_options.sample.geojson",
+      "type": "GeoJSON",
+      "geometry": "Polygon",
+      "recordCount": 2,
+      "sensitive": false,
+      "notes": "Sample burn management polygons used to describe burn context output format."
+    }
+  },
+  "overlays": {
+    "slope_risk": {
+      "expectedPath": "overlays/slope_risk.tif",
+      "type": "raster",
+      "scoreRange": [
+        0,
+        100
+      ],
+      "modelRole": "Slope Risk"
+    },
+    "fuel_risk": {
+      "expectedPath": "overlays/fuel_risk.tif",
+      "type": "raster",
+      "scoreRange": [
+        0,
+        100
+      ],
+      "modelRole": "Fuel Risk"
+    },
+    "granite_influence": {
+      "expectedPath": "overlays/granite_influence.tif",
+      "type": "raster",
+      "scoreRange": [
+        0,
+        100
+      ],
+      "modelRole": "Granite Influence"
+    },
+    "area_vulnerability": {
+      "expectedPath": "overlays/area_vulnerability.tif",
+      "type": "raster",
+      "scoreRange": [
+        0,
+        100
+      ],
+      "modelRole": "Area Fire Vulnerability"
+    }
+  },
+  "modelAssumptions": [
+    "Processed model inputs use a 0-100 risk score scale.",
+    "Sample GeoJSON coordinates are not authoritative heritage locations.",
+    "Real sensitive heritage coordinates should not be committed without approval.",
+    "Raster overlays are documented as expected outputs but are not included in this sample structure."
+  ]
+}

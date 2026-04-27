@@ -1,0 +1,74 @@
+{
+  "type": "FeatureCollection",
+  "name": "heritage_sites_sample",
+  "metadata": {
+    "description": "Sample anonymised heritage site points for MVP processed data structure.",
+    "coordinateStatus": "anonymised",
+    "sensitive": true
+  },
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "FRK-094",
+        "name": "Bilya Mia Rock Shelter",
+        "heritageType": "Rock art / petroglyphs",
+        "source": "ACHIS",
+        "slope": 28,
+        "fuelRisk": 72,
+        "graniteInfluence": 65,
+        "burnContext": 60,
+        "heritageTypeRisk": 90
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          117.35,
+          -34.95
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "FRK-108",
+        "name": "Ngaook Ochre Quarry",
+        "heritageType": "Ochre extraction site",
+        "source": "Inherit",
+        "slope": 22,
+        "fuelRisk": 60,
+        "graniteInfluence": 55,
+        "burnContext": 55,
+        "heritageTypeRisk": 65
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          117.42,
+          -34.89
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "FRK-113",
+        "name": "Frankland River Timber",
+        "heritageType": "Timber structures",
+        "source": "Field observation",
+        "slope": 12,
+        "fuelRisk": 48,
+        "graniteInfluence": 30,
+        "burnContext": 45,
+        "heritageTypeRisk": 80
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          117.18,
+          -34.72
+        ]
+      }
+    }
+  ]
+}
