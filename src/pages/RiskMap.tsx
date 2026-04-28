@@ -59,6 +59,32 @@ const riskColours: Record<RiskLevel, string> = {
   Low: '#14964b',
 }
 
+const mapInstructions = [
+  'Use the layer checkboxes to turn map layers on or off.',
+  'Scroll or use the map controls to zoom in and out.',
+  'Click and drag the map to pan around the FRK study area.',
+  'Click a heritage place to view its key attributes in the details panel.',
+  'Use the heritage filters to narrow results by risk level and heritage type.',
+]
+
+const layerExplanations = [
+  {
+    title: 'Fire vulnerability colours',
+    description:
+      'Red indicates higher vulnerability, amber indicates medium vulnerability, and green indicates lower vulnerability. These colours help users quickly identify priority heritage areas.',
+  },
+  {
+    title: 'Fuel type',
+    description:
+      'The fuel type layer shows processed vegetation or surface fuel categories used to support the fire vulnerability analysis.',
+  },
+  {
+    title: 'Slope',
+    description:
+      'The slope layer shows terrain steepness. Steeper areas may influence fire behaviour, access difficulty and mitigation planning.',
+  },
+]
+
 const RiskMap = () => {
   const mapElementRef = useRef<HTMLDivElement | null>(null)
   const mapRef = useRef<L.Map | null>(null)
@@ -429,6 +455,27 @@ const polygons = L.geoJSON(
             <p>High: {metadata?.raster_overlays.classification?.high || 'Loading'}</p>
           </div>
         </div>
+
+        <div className="mb-6 rounded-xl bg-white border border-gray-200 p-4">
+  <p className="font-bold text-base mb-3">How to Use This Map</p>
+  <ul className="text-xs text-gray-600 space-y-2 list-disc pl-4">
+    {mapInstructions.map((instruction) => (
+      <li key={instruction}>{instruction}</li>
+    ))}
+  </ul>
+</div>
+
+<div className="mb-6 rounded-xl bg-[#F7F2EA] border border-gray-200 p-4">
+  <p className="font-bold text-base mb-3">Layer Explanations</p>
+  <div className="text-xs text-gray-600 space-y-3">
+    {layerExplanations.map((item) => (
+      <p key={item.title}>
+        <span className="font-semibold text-gray-900">{item.title}:</span>{' '}
+        {item.description}
+      </p>
+    ))}
+  </div>
+</div>
 
         <div className="mt-auto rounded-xl bg-[#F7F2EA] border border-gray-200 p-4">
           <p className="font-bold text-sm mb-2">Selected Feature</p>
