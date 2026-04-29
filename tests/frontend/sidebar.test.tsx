@@ -15,6 +15,9 @@ describe('Sidebar', () => {
     expect(sidebar).not.toBeNull()
     expect(sidebar).toHaveTextContent(/Fire Vulnerability\s*Assessment Tool/)
     expect(screen.getByText('Franklin District · WA')).toBeInTheDocument()
+    expect(screen.getByText('Project Partners')).toBeInTheDocument()
+    expect(screen.getByText('Wagyl Kaip')).toBeInTheDocument()
+    expect(screen.getByText('University of Western Australia')).toBeInTheDocument()
 
     expect(screen.getByRole('link', { name: 'Risk Map' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Model Insights' })).toBeInTheDocument()
