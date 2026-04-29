@@ -59,6 +59,32 @@ const riskColours: Record<RiskLevel, string> = {
   Low: '#14964b',
 }
 
+const mapInstructions = [
+  'Use the layer checkboxes to turn map layers on or off.',
+  'Scroll or use the map controls to zoom in and out.',
+  'Click and drag the map to pan around the FRK study area.',
+  'Click a heritage place to view its key attributes in the details panel.',
+  'Use the heritage filters to narrow results by risk level and heritage type.',
+]
+
+const layerExplanations = [
+  {
+    title: 'Fire vulnerability colours',
+    description:
+      'Red indicates higher vulnerability, amber indicates medium vulnerability, and green indicates lower vulnerability. These colours help users quickly identify priority heritage areas.',
+  },
+  {
+    title: 'Fuel type',
+    description:
+      'The fuel type layer shows processed vegetation or surface fuel categories used to support the fire vulnerability analysis.',
+  },
+  {
+    title: 'Slope',
+    description:
+      'The slope layer shows terrain steepness. Steeper areas may influence fire behaviour, access difficulty and mitigation planning.',
+  },
+]
+
 const RiskMap = () => {
   const mapElementRef = useRef<HTMLDivElement | null>(null)
   const mapRef = useRef<L.Map | null>(null)
@@ -430,6 +456,27 @@ const polygons = L.geoJSON(
           </div>
         </div>
 
+        <div className="mb-6 rounded-xl bg-white border border-gray-200 p-4">
+  <p className="font-bold text-base mb-3">How to Use This Map</p>
+  <ul className="text-xs text-gray-600 space-y-2 list-disc pl-4">
+    {mapInstructions.map((instruction) => (
+      <li key={instruction}>{instruction}</li>
+    ))}
+  </ul>
+</div>
+
+<div className="mb-6 rounded-xl bg-[#F7F2EA] border border-gray-200 p-4">
+  <p className="font-bold text-base mb-3">Layer Explanations</p>
+  <div className="text-xs text-gray-600 space-y-3">
+    {layerExplanations.map((item) => (
+      <p key={item.title}>
+        <span className="font-semibold text-gray-900">{item.title}:</span>{' '}
+        {item.description}
+      </p>
+    ))}
+  </div>
+</div>
+
         <div className="mt-auto rounded-xl bg-[#F7F2EA] border border-gray-200 p-4">
           <p className="font-bold text-sm mb-2">Selected Feature</p>
           {selectedFeature ? (
@@ -461,16 +508,36 @@ const polygons = L.geoJSON(
           </div>
         )}
 
-        <div className="absolute bottom-6 right-6 bg-white rounded-xl shadow-lg border border-gray-200 px-4 py-3 z-[900]">
-          <p className="font-bold text-sm mb-2">Risk Legend</p>
-          <div className="flex items-center gap-2 text-xs mb-1">
-            <span className="w-3 h-3 rounded-full bg-[#d2302a]" /> High
-          </div>
-          <div className="flex items-center gap-2 text-xs mb-1">
-            <span className="w-3 h-3 rounded-full bg-[#ebae26]" /> Medium
-          </div>
-          <div className="flex items-center gap-2 text-xs">
-            <span className="w-3 h-3 rounded-full bg-[#14964b]" /> Low
+             <div className="absolute bottom-6 right-6 w-72 bg-white rounded-xl shadow-lg border border-gray-200 px-4 py-4 z-[900]">
+          <p className="font-bold text-sm mb-2">Fire Vulnerability Legend</p>
+          <p className="text-[11px] text-gray-500 mb-3">
+            Colours indicate the relative vulnerability level used to prioritise heritage places on the map.
+          </p>
+
+          <div className="space-y-2 text-xs">
+            <div className="flex items-start gap-2">
+              <span className="w-3 h-3 rounded-full bg-[#d2302a] mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="font-semibold text-gray-900">High vulnerability</p>
+                <p className="text-gray-500">Higher priority areas for review and mitigation planning.</p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-2">
+              <span className="w-3 h-3 rounded-full bg-[#ebae26] mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="font-semibold text-gray-900">Medium vulnerability</p>
+                <p className="text-gray-500">Moderate vulnerability based on the processed risk layer.</p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-2">
+              <span className="w-3 h-3 rounded-full bg-[#14964b] mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="font-semibold text-gray-900">Low vulnerability</p>
+                <p className="text-gray-500">Lower vulnerability compared with other mapped areas.</p>
+              </div>
+            </div>
           </div>
         </div>
       </div>
