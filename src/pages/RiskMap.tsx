@@ -745,25 +745,25 @@ function RiskMap() {
             </div>
           </div>
 
-          <div className="firewatch-key-group">
-            <h3>Slope</h3>
-            <div>
-              <span className="firewatch-key-box firewatch-key-box--slope-low" />
-              <span>Low</span>
-            </div>
-            <div>
-              <span className="firewatch-key-box firewatch-key-box--slope-mid" />
-              <span>Moderate</span>
-            </div>
-            <div>
-              <span className="firewatch-key-box firewatch-key-box--slope-high" />
-              <span>Steep</span>
-            </div>
-            <div>
-              <span className="firewatch-key-box firewatch-key-box--slope-vhigh" />
-              <span>Very steep</span>
-            </div>
-          </div>
+         <div className="firewatch-key-group">
+  <h3>Slope</h3>
+  <div>
+    <span className="firewatch-key-box firewatch-key-box--slope-low" />
+    <span>0-5°: Low slope</span>
+  </div>
+  <div>
+    <span className="firewatch-key-box firewatch-key-box--slope-mid" />
+    <span>5-15°: Moderate slope</span>
+  </div>
+  <div>
+    <span className="firewatch-key-box firewatch-key-box--slope-high" />
+    <span>15-25°: Steep slope</span>
+  </div>
+  <div>
+    <span className="firewatch-key-box firewatch-key-box--slope-vhigh" />
+    <span>25°+: Very steep slope</span>
+  </div>
+</div>
 
           <div className="firewatch-key-group">
             <h3>Context Layers</h3>
