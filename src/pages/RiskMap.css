@@ -386,3 +386,10 @@
     min-height: 70vh;
   }
 }
+
+.firewatch-key-helper {
+  margin: -0.15rem 0 0.65rem;
+  color: #6b7280;
+  font-size: 0.78rem;
+  line-height: 1.35;
+}

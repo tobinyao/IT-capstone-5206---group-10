@@ -747,6 +747,9 @@ function RiskMap() {
 
          <div className="firewatch-key-group">
   <h3>Slope</h3>
+  <p className="firewatch-key-helper">
+  Slope ranges indicate terrain steepness for interpreting the slope overlay.
+</p>
   <div>
     <span className="firewatch-key-box firewatch-key-box--slope-low" />
     <span>0-5°: Low slope</span>
