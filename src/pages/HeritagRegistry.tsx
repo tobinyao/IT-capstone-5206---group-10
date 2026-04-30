@@ -1,280 +1,364 @@
-// NOTE: heritageType and fuelType are typed as `string` for display purposes.
-// The canonical union types live in SiteAssessment.tsx; mock data values
-// here are kept aligned with those by hand. A future refactor should extract
-// a shared scoring module (src/lib/scoring.ts) and reuse the unions in both
-// files so spec changes propagate automatically.
+import { useEffect, useMemo, useState } from 'react'
 
-interface Site {
-    id: string
-    name: string
-    heritageType: string
-    source: 'ACHIS' | 'Inherit' | 'Field obs.'
-    slope: number
-    fuelType: string
-    burnContext: boolean
-    vulnerability: 'High' | 'Medium' | 'Low'
-    assessedDate: string
-  }
+type RiskLevel = 'High' | 'Medium' | 'Low'
 
-  // Vulnerability values below are pre-computed by hand using the Heritage
-  // Vulnerability Score formula:
-  //   round(fuel × 0.45 + slope × 0.25 + heritageType × 0.25 + burnContext × 0.05)
-  // with thresholds High ≥ 64.2, Medium ≥ 48.3, else Low.
-  // Heritage type mappings from earlier mock strings to the 9 spec categories
-  // ("Ochre extraction" → "Artefact scatter / quarry / …", "Stone arrangement"
-  // → "Ceremonial / creation / …") are judgment calls — please flag in review
-  // if a different mapping fits better.
-  const mockSites: Site[] = [
-    {
-      id: 'FRK-094',
-      name: 'Bilya Mia Rock Shelter',
-      heritageType: 'Rock art / painting / engraving / rock shelter',
-      source: 'ACHIS',
-      slope: 28,
-      fuelType: 'Open forest',
-      burnContext: true,
-      vulnerability: 'High', // 90
-      assessedDate: '2026-03-28',
-    },
-    {
-      id: 'FRK-108',
-      name: 'Ngaook Ochre Quarry',
-      heritageType: 'Artefact scatter / quarry / grinding area / sub-surface material',
-      source: 'Inherit',
-      slope: 22,
-      fuelType: 'Shrubland',
-      burnContext: false,
-      vulnerability: 'High', // 71
-      assessedDate: '2026-03-30',
-    },
-    {
-      id: 'FRK-113',
-      name: 'Frankland River Timber',
-      heritageType: 'Modified tree / timber / wooden structure',
-      source: 'Field obs.',
-      slope: 12,
-      fuelType: 'Low woodland',
-      burnContext: false,
-      vulnerability: 'Medium', // 64
-      assessedDate: '2026-04-02',
-    },
-    {
-      id: 'FRK-114',
-      name: 'Wudjari Scar Tree Grove',
-      heritageType: 'Modified tree / timber / wooden structure',
-      source: 'ACHIS',
-      slope: 10,
-      fuelType: 'Low woodland',
-      burnContext: false,
-      vulnerability: 'Medium', // 62
-      assessedDate: '2026-04-01',
-    },
-    {
-      id: 'FRK-115',
-      name: 'Two Peoples Bay Stone',
-      heritageType: 'Ceremonial / creation / dreaming / mythological place',
-      source: 'Inherit',
-      slope: 5,
-      fuelType: 'Sparse grassland',
-      burnContext: false,
-      vulnerability: 'Low', // 36
-      assessedDate: '2026-03-15',
-    },
-    {
-      id: 'FRK-116',
-      name: 'Manypeaks Midden Complex',
-      heritageType: 'Midden / organic deposit',
-      source: 'ACHIS',
-      slope: 4,
-      fuelType: 'Grassland',
-      burnContext: false,
-      vulnerability: 'Low', // 46
-      assessedDate: '2026-03-20',
-    },
-  ]
-  
-  const vulnerabilityPill = (v: Site['vulnerability']) => {
-    const styles = {
-      High: 'bg-red-100 text-red-800',
-      Medium: 'bg-amber-100 text-amber-800',
-      Low: 'bg-green-100 text-green-700',
-    }
-    return (
-      <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold ${styles[v]}`}>
-        {v}
-      </span>
-    )
+type HeritageFeature = {
+  properties: Record<string, unknown>
+}
+
+type HeritageFeatureCollection = {
+  features: HeritageFeature[]
+}
+
+type RegistrySite = {
+  id: string
+  name: string
+  heritageType: string
+  heritageKind: string
+  slope: number | null
+  fuelType: string
+  burnContext: string
+  vulnerability: RiskLevel
+  score: number | null
+}
+
+const HERITAGE_DATA_URL = `${import.meta.env.BASE_URL}data/processed/heritage_all_layer.geojson`
+
+const HERITAGE_CSV_FIELDS = [
+  ['Identifier', 'identifier'],
+  ['Name', 'name'],
+  ['Heritage Kind', 'heritage_kind'],
+  ['Status', 'place_status'],
+  ['Place Type', 'place_type'],
+  ['Region', 'region'],
+  ['Source', 'source'],
+  ['Fuel Class', 'fuel_class'],
+  ['Fuel Risk', 'fuel_risk'],
+  ['Slope Degrees', 'slope_degrees'],
+  ['Slope Risk', 'slope_risk'],
+  ['Heritage Type Risk Label', 'heritage_type_risk_label'],
+  ['Heritage Type Risk', 'heritage_type_risk'],
+  ['Burn Management Context', 'burn_management_context'],
+  ['Vulnerability Score', 'vulnerability_score'],
+  ['Vulnerability Level', 'vulnerability_level'],
+] as const
+
+const csvValue = (value: unknown) => {
+  if (value === null || value === undefined) return ''
+  const text = String(value)
+  if (/[",\n\r]/.test(text)) return `"${text.replace(/"/g, '""')}"`
+  return text
+}
+
+const heritageGeoJsonToCsv = (data: HeritageFeatureCollection) => {
+  const headers = HERITAGE_CSV_FIELDS.map(([label]) => label).join(',')
+  const rows = data.features.map((feature) =>
+    HERITAGE_CSV_FIELDS.map(([, key]) => csvValue(feature.properties[key])).join(',')
+  )
+  return [headers, ...rows].join('\n')
+}
+
+const textValue = (value: unknown, fallback = 'Unknown') => {
+  if (value === null || value === undefined || value === '') return fallback
+  return String(value)
+}
+
+const normalizedTextValue = (value: unknown, fallback = 'Unknown') => textValue(value, fallback).trim()
+
+const numberValue = (value: unknown) => {
+  if (typeof value === 'number') return value
+  if (typeof value === 'string' && value.trim() !== '') {
+    const parsed = Number(value)
+    return Number.isFinite(parsed) ? parsed : null
   }
-  
-  const sourceBadge = (s: Site['source']) => {
-    const styles = {
-      'ACHIS': 'bg-indigo-50 text-indigo-700',
-      'Inherit': 'bg-indigo-50 text-indigo-700',
-      'Field obs.': 'bg-green-50 text-green-700',
-    }
-    return (
-      <span className={`inline-block px-2 py-0.5 rounded text-xs font-semibold ${styles[s]}`}>
-        {s}
-      </span>
-    )
+  return null
+}
+
+const riskValue = (value: unknown): RiskLevel => {
+  if (value === 'High' || value === 'Medium' || value === 'Low') return value
+  return 'Low'
+}
+
+const featureToSite = (feature: HeritageFeature): RegistrySite => {
+  const properties = feature.properties
+  return {
+    id: textValue(properties.identifier ?? properties.id, 'Unknown ID'),
+    name: textValue(properties.name, 'Unnamed heritage place'),
+    heritageType: textValue(properties.place_type ?? properties.heritage_type_risk_label),
+    heritageKind: normalizedTextValue(properties.heritage_kind),
+    slope: numberValue(properties.slope_degrees),
+    fuelType: textValue(properties.fuel_class),
+    burnContext: textValue(properties.burn_management_context),
+    vulnerability: riskValue(properties.vulnerability_level),
+    score: numberValue(properties.vulnerability_score),
   }
-  
-  import { useState } from 'react'
-  
-  const HeritagRegistry = () => {
-    const [search, setSearch] = useState('')
-    const [vulnFilter, setVulnFilter] = useState('All')
-    const [sourceFilter, setSourceFilter] = useState('All')
-  
-    const filtered = mockSites.filter((site) => {
-      const matchSearch =
-        site.name.toLowerCase().includes(search.toLowerCase()) ||
-        site.id.toLowerCase().includes(search.toLowerCase())
-      const matchVuln = vulnFilter === 'All' || site.vulnerability === vulnFilter
-      const matchSource = sourceFilter === 'All' || site.source === sourceFilter
-      return matchSearch && matchVuln && matchSource
-    })
-  
-    const total = mockSites.length
-    const high = mockSites.filter((s) => s.vulnerability === 'High').length
-    const medium = mockSites.filter((s) => s.vulnerability === 'Medium').length
-    const low = mockSites.filter((s) => s.vulnerability === 'Low').length
-  
-    const exportCSV = () => {
-      const headers = ['ID', 'Name', 'Heritage Type', 'Source', 'Slope', 'Fuel Type', 'Burn Context', 'Vulnerability', 'Assessed Date']
-      const rows = mockSites.map((s) =>
-        [s.id, s.name, s.heritageType, s.source, s.slope, s.fuelType, s.burnContext ? 'Inside' : 'Outside', s.vulnerability, s.assessedDate].join(',')
-      )
-      const csv = [headers.join(','), ...rows].join('\n')
+}
+
+const vulnerabilityPill = (v: RiskLevel) => {
+  const styles = {
+    High: 'bg-red-100 text-red-800',
+    Medium: 'bg-amber-100 text-amber-800',
+    Low: 'bg-green-100 text-green-700',
+  }
+  return (
+    <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold ${styles[v]}`}>
+      {v}
+    </span>
+  )
+}
+
+const heritageKindBadge = (heritageKind: string) => {
+  const style = heritageKind === 'Aboriginal'
+    ? 'bg-indigo-50 text-indigo-700'
+    : 'bg-green-50 text-green-700'
+
+  return (
+    <span className={`inline-block px-2 py-0.5 rounded text-xs font-semibold ${style}`}>
+      {heritageKind}
+    </span>
+  )
+}
+
+const HeritagRegistry = () => {
+  const [search, setSearch] = useState('')
+  const [vulnFilter, setVulnFilter] = useState('All')
+  const [heritageKindFilter, setHeritageKindFilter] = useState('All')
+  const [heritageData, setHeritageData] = useState<HeritageFeatureCollection | null>(null)
+  const [loadError, setLoadError] = useState<string | null>(null)
+  const [isDownloading, setIsDownloading] = useState(false)
+  const [downloadError, setDownloadError] = useState<string | null>(null)
+
+  useEffect(() => {
+    let active = true
+
+    async function loadHeritageData() {
+      try {
+        const response = await fetch(HERITAGE_DATA_URL)
+        if (!response.ok) {
+          throw new Error('Could not load heritage registry data.')
+        }
+        const data = await response.json() as HeritageFeatureCollection
+        if (active) setHeritageData(data)
+      } catch (error) {
+        if (active) {
+          setLoadError(error instanceof Error ? error.message : 'Could not load heritage registry data.')
+        }
+      }
+    }
+
+    loadHeritageData()
+
+    return () => {
+      active = false
+    }
+  }, [])
+
+  const sites = useMemo(
+    () => heritageData?.features.map(featureToSite) ?? [],
+    [heritageData]
+  )
+
+  const heritageKindOptions = useMemo(
+    () => Array.from(new Set(sites.map((site) => site.heritageKind))).sort(),
+    [sites]
+  )
+
+  const filtered = sites.filter((site) => {
+    const query = search.toLowerCase()
+    const matchSearch =
+      site.name.toLowerCase().includes(query) ||
+      site.id.toLowerCase().includes(query) ||
+      site.heritageType.toLowerCase().includes(query)
+    const matchVuln = vulnFilter === 'All' || site.vulnerability === vulnFilter
+    const matchHeritageKind = heritageKindFilter === 'All' || site.heritageKind === heritageKindFilter
+    return matchSearch && matchVuln && matchHeritageKind
+  })
+
+  const total = sites.length
+  const high = sites.filter((site) => site.vulnerability === 'High').length
+  const medium = sites.filter((site) => site.vulnerability === 'Medium').length
+  const low = sites.filter((site) => site.vulnerability === 'Low').length
+  const activeFilterText = [
+    vulnFilter !== 'All' ? vulnFilter : null,
+    heritageKindFilter !== 'All' ? heritageKindFilter : null,
+  ].filter(Boolean).join(' + ')
+
+  const downloadHeritageData = async () => {
+    setIsDownloading(true)
+    setDownloadError(null)
+
+    try {
+      let data = heritageData
+      if (!data) {
+        const response = await fetch(HERITAGE_DATA_URL)
+        if (!response.ok) {
+          throw new Error('Could not download heritage data.')
+        }
+        data = await response.json() as HeritageFeatureCollection
+      }
+
+      const csv = heritageGeoJsonToCsv(data)
+      const blob = new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8' })
+      const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
-      a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv)
+      a.href = url
       a.download = 'heritage_registry.csv'
+      document.body.appendChild(a)
       a.click()
+      a.remove()
+      window.setTimeout(() => URL.revokeObjectURL(url), 0)
+    } catch (error) {
+      setDownloadError(error instanceof Error ? error.message : 'Could not download heritage data.')
+    } finally {
+      setIsDownloading(false)
     }
-  
-    return (
-      <div className="px-8 py-8 min-h-full" style={{ background: '#F0EDE8' }}>
-  
-        {/* Header */}
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-black text-gray-900">Heritage Registry</h1>
-          <button className="bg-gray-900 text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 hover:bg-gray-700 transition-colors">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-            Add Site
-          </button>
+  }
+
+  return (
+    <div className="px-8 py-8 min-h-full" style={{ background: '#F0EDE8' }}>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-black text-gray-900">Heritage Registry</h1>
+        <button className="bg-gray-900 text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 hover:bg-gray-700 transition-colors">
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+          </svg>
+          Add Site
+        </button>
+      </div>
+
+      {loadError && (
+        <div className="mb-4 bg-red-50 border border-red-100 text-red-700 rounded-lg px-4 py-3 text-sm font-semibold">
+          {loadError}
         </div>
-  
-        {/* Stats */}
-        <div className="grid grid-cols-4 gap-3 mb-6">
-          {[
-            { label: 'Total sites', value: total, color: 'text-gray-900' },
-            { label: 'High vulnerability', value: high, color: 'text-red-700' },
-            { label: 'Medium vulnerability', value: medium, color: 'text-amber-600' },
-            { label: 'Low vulnerability', value: low, color: 'text-green-700' },
-          ].map((stat) => (
-            <div key={stat.label} className="bg-white rounded-xl p-4 border border-gray-200">
-              <div className={`text-2xl font-black ${stat.color}`}>{stat.value}</div>
-              <div className="text-xs text-gray-400 font-medium mt-1">{stat.label}</div>
-            </div>
-          ))}
-        </div>
-  
-        {/* Toolbar */}
-        <div className="flex gap-3 mb-4 items-center">
-          <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-lg px-3 py-2 flex-1">
-            <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
-            </svg>
-            <input
-              type="text"
-              placeholder="Search sites..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="text-sm outline-none w-full text-gray-700 placeholder-gray-400"
-            />
+      )}
+
+      <div className="grid grid-cols-4 gap-3 mb-6">
+        {[
+          { label: 'Total sites', value: total, color: 'text-gray-900' },
+          { label: 'High vulnerability', value: high, color: 'text-red-700' },
+          { label: 'Medium vulnerability', value: medium, color: 'text-amber-600' },
+          { label: 'Low vulnerability', value: low, color: 'text-green-700' },
+        ].map((stat) => (
+          <div key={stat.label} className="bg-white rounded-xl p-4 border border-gray-200">
+            <div className={`text-2xl font-black ${stat.color}`}>{stat.value}</div>
+            <div className="text-xs text-gray-400 font-medium mt-1">{stat.label}</div>
           </div>
-          <select
-            value={vulnFilter}
-            onChange={(e) => setVulnFilter(e.target.value)}
-            className="bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 outline-none cursor-pointer"
-          >
-            <option value="All">All vulnerability</option>
-            <option value="High">High</option>
-            <option value="Medium">Medium</option>
-            <option value="Low">Low</option>
-          </select>
-          <select
-            value={sourceFilter}
-            onChange={(e) => setSourceFilter(e.target.value)}
-            className="bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 outline-none cursor-pointer"
-          >
-            <option value="All">All sources</option>
-            <option value="ACHIS">ACHIS</option>
-            <option value="Inherit">Inherit</option>
-            <option value="Field obs.">Field obs.</option>
-          </select>
-          <button
-            onClick={exportCSV}
-            className="bg-white border border-gray-200 rounded-lg px-4 py-2 text-sm font-semibold text-gray-700 flex items-center gap-2 hover:bg-gray-50 transition-colors"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3" />
-            </svg>
-            Export CSV
-          </button>
+        ))}
+      </div>
+
+      <div className="flex gap-3 mb-4 items-center">
+        <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-lg px-3 py-2 flex-1">
+          <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
+          </svg>
+          <input
+            type="text"
+            placeholder="Search sites..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="text-sm outline-none w-full text-gray-700 placeholder-gray-400"
+          />
         </div>
-  
-        {/* Table */}
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50">
+        <select
+          value={vulnFilter}
+          onChange={(e) => setVulnFilter(e.target.value)}
+          className="bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 outline-none cursor-pointer"
+        >
+          <option value="All">All vulnerability</option>
+          <option value="High">High</option>
+          <option value="Medium">Medium</option>
+          <option value="Low">Low</option>
+        </select>
+        <select
+          value={heritageKindFilter}
+          onChange={(e) => setHeritageKindFilter(e.target.value)}
+          className="bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 outline-none cursor-pointer"
+        >
+          <option value="All">All heritage</option>
+          {heritageKindOptions.map((heritageKind) => (
+            <option key={heritageKind} value={heritageKind}>{heritageKind}</option>
+          ))}
+        </select>
+        <button
+          onClick={downloadHeritageData}
+          disabled={isDownloading}
+          className="bg-white border border-gray-200 rounded-lg px-4 py-2 text-sm font-semibold text-gray-700 flex items-center gap-2 hover:bg-gray-50 transition-colors disabled:opacity-60"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3" />
+          </svg>
+          {isDownloading ? 'Downloading...' : 'Download heritage data'}
+        </button>
+      </div>
+      {downloadError && (
+        <div className="mb-4 text-sm font-semibold text-red-700">
+          {downloadError}
+        </div>
+      )}
+      {heritageData && (
+        <div className="mb-3 text-xs font-semibold text-gray-400">
+          Showing {filtered.length} of {total} heritage places
+          {activeFilterText ? ` for ${activeFilterText}` : ''}
+        </div>
+      )}
+
+      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+        <table className="w-full text-sm">
+          <thead className="bg-gray-50">
+            <tr>
+              {['Site name', 'Heritage type', 'Heritage kind', 'Slope', 'Fuel type', 'Burn context', 'Vulnerability', 'Score', ''].map((h) => (
+                <th key={h} className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-gray-400">
+                  {h}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody key={`${vulnFilter}-${heritageKindFilter}-${search}`}>
+            {!heritageData && !loadError ? (
               <tr>
-                {['Site name', 'Heritage type', 'Source', 'Slope', 'Fuel Type', 'Burn Context', 'Vulnerability', 'Assessed', ''].map((h) => (
-                  <th key={h} className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-gray-400">
-                    {h}
-                  </th>
-                ))}
+                <td colSpan={9} className="px-4 py-8 text-center text-gray-400 text-sm">
+                  Loading heritage registry data...
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              {filtered.length === 0 ? (
-                <tr>
-                  <td colSpan={9} className="px-4 py-8 text-center text-gray-400 text-sm">
-                    No sites match your search
+            ) : filtered.length === 0 ? (
+              <tr>
+                <td colSpan={9} className="px-4 py-8 text-center text-gray-400 text-sm">
+                  No heritage places match the selected filters
+                </td>
+              </tr>
+            ) : (
+              filtered.map((site) => (
+                <tr key={site.id} className="border-t border-gray-100 hover:bg-gray-50 transition-colors">
+                  <td className="px-4 py-3">
+                    <div className="font-bold text-gray-900">{site.name}</div>
+                    <div className="text-xs text-gray-400 mt-0.5">{site.id}</div>
+                  </td>
+                  <td className="px-4 py-3 text-gray-600">{site.heritageType}</td>
+                  <td className="px-4 py-3">{heritageKindBadge(site.heritageKind)}</td>
+                  <td className="px-4 py-3 text-gray-600">
+                    {site.slope === null ? 'Unknown' : `${site.slope.toFixed(2)} deg`}
+                  </td>
+                  <td className="px-4 py-3 text-gray-600">{site.fuelType}</td>
+                  <td className="px-4 py-3 text-gray-600">{site.burnContext}</td>
+                  <td className="px-4 py-3">{vulnerabilityPill(site.vulnerability)}</td>
+                  <td className="px-4 py-3 text-gray-600">
+                    {site.score === null ? 'Unknown' : site.score}
+                  </td>
+                  <td className="px-4 py-3">
+                    <button className="text-gray-400 hover:text-gray-600 p-1 rounded hover:bg-gray-100">
+                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z"/>
+                      </svg>
+                    </button>
                   </td>
                 </tr>
-              ) : (
-                filtered.map((site) => (
-                  <tr key={site.id} className="border-t border-gray-100 hover:bg-gray-50 transition-colors">
-                    <td className="px-4 py-3">
-                      <div className="font-bold text-gray-900">{site.name}</div>
-                      <div className="text-xs text-gray-400 mt-0.5">{site.id}</div>
-                    </td>
-                    <td className="px-4 py-3 text-gray-600">{site.heritageType}</td>
-                    <td className="px-4 py-3">{sourceBadge(site.source)}</td>
-                    <td className="px-4 py-3 text-gray-600">{site.slope}°</td>
-                    <td className="px-4 py-3 text-gray-600">{site.fuelType}</td>
-                    <td className="px-4 py-3 text-gray-600">{site.burnContext ? 'Inside' : 'Outside'}</td>
-                    <td className="px-4 py-3">{vulnerabilityPill(site.vulnerability)}</td>
-                    <td className="px-4 py-3 text-gray-400">{site.assessedDate}</td>
-                    <td className="px-4 py-3">
-                      <button className="text-gray-400 hover:text-gray-600 p-1 rounded hover:bg-gray-100">
-                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                          <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z"/>
-                        </svg>
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-  
+              ))
+            )}
+          </tbody>
+        </table>
       </div>
-    )
-  }
-  
-  export default HeritagRegistry
+    </div>
+  )
+}
+
+export default HeritagRegistry
