@@ -6,6 +6,7 @@ import FireRegulation from './pages/FireRegulation'
 import HeritagRegistry from './pages/HeritagRegistry'
 import SiteAssessment from './pages/SiteAssessment'
 import Login from './pages/Login'
+import MitigationGuide from './pages/MitigationGuide'
 
 const MainLayout = () => {
   return (
@@ -16,6 +17,7 @@ const MainLayout = () => {
           <Route path="/" element={<RiskMap />} />
           <Route path="/insights" element={<ModelInsights />} />
           <Route path="/regulation" element={<FireRegulation />} />
+          <Route path="/mitigation-guide" element={<MitigationGuide />} />
           <Route path="/registry" element={<HeritagRegistry />} />
           <Route path="/assessment" element={<SiteAssessment />} />
         </Routes>
