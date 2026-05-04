@@ -2,6 +2,7 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS
 from routes.auth_routes import auth_bp
 
+from routes.heritage_routes import heritage_bp
 from services.site_assessment import calculate_site_score, get_risk_level
 
 from pathlib import Path
@@ -9,6 +10,7 @@ import json
 
 app = Flask(__name__)
 CORS(app)
+app.register_blueprint(heritage_bp)
 
 app.register_blueprint(auth_bp)
 BASE_DIR = Path(__file__).resolve().parent

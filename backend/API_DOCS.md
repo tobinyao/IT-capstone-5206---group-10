@@ -113,7 +113,54 @@ Example Error Response
   "error": "fuelRisk must be between 0 and 100"
 }
 ```
+5. Heritage Sites
+Endpoint
+```
+GET /api/heritage
+GET /api/sites
+```
+Purpose
+
+Returns heritage site records from the local SQLite database.
+
+Example Response
+```JSON
+{
+  "count": 268,
+  "sites": []
+}
+```
+
+Single site lookup
+```
+GET /api/heritage/<site_id>
+GET /api/sites/<site_id>
+```
+
+6. Processed Map Layers
+Endpoints
+```
+GET /api/layers/heritage
+GET /api/layers/burn-options
+GET /api/layers/granite
+```
+Purpose
+
+Returns page-ready GeoJSON FeatureCollections from SQLite. These correspond to
+the processed heritage, burn option, and granite layers used by the map and
+registry pages.
+
+7. Processed Metadata
+Endpoint
+```
+GET /api/processed-metadata
+```
+Purpose
+
+Returns processed map metadata from SQLite, including analysis bounds, layer
+counts, raster overlay filenames, and score formula details.
+
 Notes
 
-The backend currently provides metadata and site assessment support.
-Map visualisation and layer display are handled by the frontend, while the backend provides model data and assessment results.
+The backend now provides SQLite-backed heritage, processed metadata, and
+processed map layer endpoints. Raster overlay image files remain static files.
