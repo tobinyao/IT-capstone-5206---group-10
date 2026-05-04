@@ -22,7 +22,8 @@ type RegistrySite = {
   score: number | null
 }
 
-const HERITAGE_DATA_URL = `${import.meta.env.BASE_URL}data/processed/heritage_all_layer.geojson`
+const API_BASE = import.meta.env.VITE_API_BASE_URL ?? 'http://127.0.0.1:5000'
+const HERITAGE_DATA_URL = `${API_BASE}/api/layers/heritage`
 
 const HERITAGE_CSV_FIELDS = [
   ['Identifier', 'identifier'],
