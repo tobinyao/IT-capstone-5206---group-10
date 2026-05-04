@@ -35,6 +35,7 @@ def row_to_heritage_site(row):
         "identifier": row["identifier"],
         "name": row["name"],
         "source": row["source"],
+        "dataSource": row["data_source"],
         "geometry": json.loads(row["geometry_json"]) if row["geometry_json"] else None,
         "properties": json.loads(row["properties_json"]) if row["properties_json"] else {},
         "coordinates": {

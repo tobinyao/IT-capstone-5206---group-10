@@ -30,9 +30,27 @@ def ensure_column(
 
 
 def apply_lightweight_migrations(connection: sqlite3.Connection) -> None:
+    ensure_column(connection, "heritage_sites", "data_source", "TEXT")
     ensure_column(connection, "heritage_sites", "properties_json", "TEXT")
     ensure_column(connection, "burn_options", "properties_json", "TEXT")
     ensure_column(connection, "granite_polygons", "properties_json", "TEXT")
+
+
+def table_exists(connection: sqlite3.Connection, table_name: str) -> bool:
+    row = connection.execute(
+        """
+        SELECT name
+        FROM sqlite_master
+        WHERE type = 'table' AND name = ?
+        """,
+        (table_name,),
+    ).fetchone()
+    return row is not None
+
+
+def apply_pre_schema_migrations(connection: sqlite3.Connection) -> None:
+    if table_exists(connection, "heritage_sites"):
+        ensure_column(connection, "heritage_sites", "data_source", "TEXT")
 
 
 def initialise_database(db_path: Path, schema_path: Path) -> None:
@@ -41,6 +59,7 @@ def initialise_database(db_path: Path, schema_path: Path) -> None:
 
     with sqlite3.connect(db_path) as connection:
         connection.execute("PRAGMA foreign_keys = ON")
+        apply_pre_schema_migrations(connection)
         connection.executescript(schema_sql)
         apply_lightweight_migrations(connection)
 
