@@ -100,7 +100,8 @@ declare global {
   }
 }
 
-const DATA_BASE = `${import.meta.env.BASE_URL}data/processed/`
+const API_BASE = import.meta.env.VITE_API_BASE_URL ?? 'http://127.0.0.1:5000'
+const PROCESSED_ASSET_BASE = `${import.meta.env.BASE_URL}data/processed/`
 const IS_TEST_ENV = import.meta.env.MODE === 'test'
 
 const defaultLayerVisibility: ToggleState = {
@@ -260,10 +261,10 @@ function RiskMap() {
     async function loadData() {
       try {
         const [metadataResponse, heritageResponse, burnResponse, graniteResponse] = await Promise.all([
-          fetch(`${DATA_BASE}metadata.json`),
-          fetch(`${DATA_BASE}heritage_all_layer.geojson`),
-          fetch(`${DATA_BASE}burn_options_layer.geojson`),
-          fetch(`${DATA_BASE}granite_layer.geojson`),
+          fetch(`${API_BASE}/api/processed-metadata`),
+          fetch(`${API_BASE}/api/layers/heritage`),
+          fetch(`${API_BASE}/api/layers/burn-options`),
+          fetch(`${API_BASE}/api/layers/granite`),
         ])
 
         if (!metadataResponse.ok || !heritageResponse.ok || !burnResponse.ok || !graniteResponse.ok) {
@@ -423,17 +424,17 @@ function RiskMap() {
     setSummary(counts)
 
     const imageBounds = getImageBounds(metadata)
-    const fireOverlay = L.imageOverlay(`${DATA_BASE}${metadata.raster_overlays.files.fire}`, imageBounds, {
+    const fireOverlay = L.imageOverlay(`${PROCESSED_ASSET_BASE}${metadata.raster_overlays.files.fire}`, imageBounds, {
       opacity: 0.92,
       interactive: false,
       pane: 'rasterPane',
     })
-    const fuelOverlay = L.imageOverlay(`${DATA_BASE}${metadata.raster_overlays.files.fuel}`, imageBounds, {
+    const fuelOverlay = L.imageOverlay(`${PROCESSED_ASSET_BASE}${metadata.raster_overlays.files.fuel}`, imageBounds, {
       opacity: 0.62,
       interactive: false,
       pane: 'rasterPane',
     })
-    const slopeOverlay = L.imageOverlay(`${DATA_BASE}${metadata.raster_overlays.files.slope}`, imageBounds, {
+    const slopeOverlay = L.imageOverlay(`${PROCESSED_ASSET_BASE}${metadata.raster_overlays.files.slope}`, imageBounds, {
       opacity: 0.62,
       interactive: false,
       pane: 'rasterPane',
