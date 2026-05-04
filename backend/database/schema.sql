@@ -20,6 +20,7 @@ CREATE TABLE IF NOT EXISTS heritage_sites (
     identifier TEXT UNIQUE,
     name TEXT NOT NULL,
     source TEXT,
+    data_source TEXT,
     geometry_json TEXT NOT NULL,
     properties_json TEXT,
     latitude REAL,
@@ -35,7 +36,8 @@ CREATE TABLE IF NOT EXISTS heritage_sites (
     updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL,
     CHECK (vulnerability_score IS NULL OR (vulnerability_score >= 0 AND vulnerability_score <= 100)),
-    CHECK (vulnerability_level IS NULL OR vulnerability_level IN ('Low', 'Medium', 'High'))
+    CHECK (vulnerability_level IS NULL OR vulnerability_level IN ('Low', 'Medium', 'High')),
+    CHECK (data_source IS NULL OR data_source IN ('DPLH_099', 'DPLH_100', 'DPLH_006'))
 );
 
 CREATE INDEX IF NOT EXISTS idx_heritage_sites_identifier
@@ -43,6 +45,9 @@ CREATE INDEX IF NOT EXISTS idx_heritage_sites_identifier
 
 CREATE INDEX IF NOT EXISTS idx_heritage_sites_source
     ON heritage_sites(source);
+
+CREATE INDEX IF NOT EXISTS idx_heritage_sites_data_source
+    ON heritage_sites(data_source);
 
 CREATE INDEX IF NOT EXISTS idx_heritage_sites_lat_lon
     ON heritage_sites(latitude, longitude);

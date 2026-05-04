@@ -47,6 +47,20 @@ def risk_level(score: int | float | None) -> str | None:
     return "Low"
 
 
+def heritage_data_source(source: str | None) -> str | None:
+    if source is None:
+        return None
+
+    normalized = source.strip().lower().replace("_", " ")
+    if normalized == "register":
+        return "DPLH_099"
+    if normalized == "lodged":
+        return "DPLH_100"
+    if normalized == "state register":
+        return "DPLH_006"
+    return None
+
+
 def load_feature_collection(path: Path) -> list[dict[str, Any]]:
     data = json.loads(path.read_text(encoding="utf-8"))
     if data.get("type") != "FeatureCollection":
@@ -165,6 +179,7 @@ def seed_heritage_sites(
                 identifier,
                 name,
                 source,
+                data_source,
                 geometry_json,
                 properties_json,
                 latitude,
@@ -177,11 +192,12 @@ def seed_heritage_sites(
                 assessed_date,
                 created_by
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(id) DO UPDATE SET
                 identifier = excluded.identifier,
                 name = excluded.name,
                 source = excluded.source,
+                data_source = excluded.data_source,
                 geometry_json = excluded.geometry_json,
                 properties_json = excluded.properties_json,
                 latitude = excluded.latitude,
@@ -199,6 +215,7 @@ def seed_heritage_sites(
                 identifier,
                 props.get("name") or "Unnamed heritage site",
                 props.get("source"),
+                heritage_data_source(props.get("source")),
                 json.dumps(geometry, separators=(",", ":")),
                 json.dumps(props, separators=(",", ":")),
                 latitude,
