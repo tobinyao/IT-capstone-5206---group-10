@@ -1,6 +1,11 @@
 from flask import Blueprint, jsonify
 
-from services.data_loader import find_record_by_id, load_json_data
+from services.data_loader import (
+    get_geojson_layer,
+    get_heritage_site_by_id,
+    get_heritage_sites as load_heritage_sites_from_db,
+    get_processed_metadata,
+)
 
 
 heritage_bp = Blueprint("heritage", __name__, url_prefix="/api")
@@ -10,11 +15,9 @@ heritage_bp = Blueprint("heritage", __name__, url_prefix="/api")
 @heritage_bp.route("/sites", methods=["GET"])
 def get_heritage_sites():
     try:
-        sites = load_json_data("heritage_sites.json")
-    except FileNotFoundError:
-        return jsonify({"error": "heritage_sites.json not found"}), 404
-    except ValueError:
-        return jsonify({"error": "heritage_sites.json is invalid"}), 500
+        sites = load_heritage_sites_from_db()
+    except Exception as error:
+        return jsonify({"error": f"could not load heritage sites: {error}"}), 500
 
     return jsonify({
         "count": len(sites),
@@ -26,14 +29,36 @@ def get_heritage_sites():
 @heritage_bp.route("/sites/<site_id>", methods=["GET"])
 def get_heritage_site(site_id):
     try:
-        sites = load_json_data("heritage_sites.json")
-    except FileNotFoundError:
-        return jsonify({"error": "heritage_sites.json not found"}), 404
-    except ValueError:
-        return jsonify({"error": "heritage_sites.json is invalid"}), 500
+        site = get_heritage_site_by_id(site_id)
+    except Exception as error:
+        return jsonify({"error": f"could not load heritage site: {error}"}), 500
 
-    site = find_record_by_id(sites, site_id)
     if site is None:
         return jsonify({"error": "heritage site not found"}), 404
 
     return jsonify(site)
+
+
+@heritage_bp.route("/layers/heritage", methods=["GET"])
+def get_heritage_layer():
+    return jsonify(get_geojson_layer("heritage_all"))
+
+
+@heritage_bp.route("/layers/burn-options", methods=["GET"])
+@heritage_bp.route("/layers/burn_options", methods=["GET"])
+def get_burn_options_layer():
+    return jsonify(get_geojson_layer("burn_options"))
+
+
+@heritage_bp.route("/layers/granite", methods=["GET"])
+def get_granite_layer():
+    return jsonify(get_geojson_layer("granite"))
+
+
+@heritage_bp.route("/processed-metadata", methods=["GET"])
+def get_processed_metadata_route():
+    metadata = get_processed_metadata()
+    if metadata is None:
+        return jsonify({"error": "processed metadata not found"}), 404
+
+    return jsonify(metadata)
