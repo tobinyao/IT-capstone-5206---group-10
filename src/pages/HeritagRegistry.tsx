@@ -167,16 +167,27 @@ const HeritagRegistry = () => {
     [sites]
   )
 
+  // TODO: replace with a dedicated backend enum endpoint once available.
+  // For now, derive Add Site dropdown options from the loaded heritage data
+  // (distinct values, excluding empty strings and the "Unknown" fallback
+  // produced by featureToSite for missing fields).
+  const distinctOptions = (values: string[]) => {
+    const cleaned = values
+      .map((value) => value.trim())
+      .filter((value) => value !== '' && value !== 'Unknown')
+    return Array.from(new Set(cleaned)).sort()
+  }
+
   const heritageTypeOptions = useMemo(
-    () => Array.from(new Set(sites.map((site) => site.heritageType))).sort(),
+    () => distinctOptions(sites.map((site) => site.heritageType)),
     [sites]
   )
   const fuelTypeOptions = useMemo(
-    () => Array.from(new Set(sites.map((site) => site.fuelType))).sort(),
+    () => distinctOptions(sites.map((site) => site.fuelType)),
     [sites]
   )
   const burnContextOptions = useMemo(
-    () => Array.from(new Set(sites.map((site) => site.burnContext))).sort(),
+    () => distinctOptions(sites.map((site) => site.burnContext)),
     [sites]
   )
 

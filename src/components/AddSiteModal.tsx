@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { ChangeEvent, FormEvent } from 'react'
 
 export type AddSiteFormData = {
@@ -102,19 +102,6 @@ const AddSiteModal = ({
     }
   }, [open])
 
-  const sortedTypes = useMemo(
-    () => [...heritageTypeOptions].filter((t) => t && t !== 'Unknown').sort(),
-    [heritageTypeOptions]
-  )
-  const sortedFuels = useMemo(
-    () => [...fuelTypeOptions].filter((t) => t && t !== 'Unknown').sort(),
-    [fuelTypeOptions]
-  )
-  const sortedBurns = useMemo(
-    () => [...burnContextOptions].filter((t) => t && t !== 'Unknown').sort(),
-    [burnContextOptions]
-  )
-
   if (!open) return null
 
   const handleChange = <K extends keyof AddSiteFormData>(
@@ -203,7 +190,7 @@ const AddSiteModal = ({
                 className={fieldInputClass}
               >
                 <option value="">Select…</option>
-                {sortedTypes.map((option) => (
+                {heritageTypeOptions.map((option) => (
                   <option key={option} value={option}>{option}</option>
                 ))}
               </select>
@@ -248,7 +235,7 @@ const AddSiteModal = ({
                 className={fieldInputClass}
               >
                 <option value="">Select…</option>
-                {sortedFuels.map((option) => (
+                {fuelTypeOptions.map((option) => (
                   <option key={option} value={option}>{option}</option>
                 ))}
               </select>
@@ -264,7 +251,7 @@ const AddSiteModal = ({
                 className={fieldInputClass}
               >
                 <option value="">Select…</option>
-                {sortedBurns.map((option) => (
+                {burnContextOptions.map((option) => (
                   <option key={option} value={option}>{option}</option>
                 ))}
               </select>
