@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import AddSiteModal from '../components/AddSiteModal'
 
 type RiskLevel = 'High' | 'Medium' | 'Low'
 
@@ -128,6 +129,8 @@ const HeritagRegistry = () => {
   const [loadError, setLoadError] = useState<string | null>(null)
   const [isDownloading, setIsDownloading] = useState(false)
   const [downloadError, setDownloadError] = useState<string | null>(null)
+  const [isAddSiteOpen, setIsAddSiteOpen] = useState(false)
+  const [addSiteNotice, setAddSiteNotice] = useState<string | null>(null)
 
   useEffect(() => {
     let active = true
@@ -161,6 +164,19 @@ const HeritagRegistry = () => {
 
   const heritageKindOptions = useMemo(
     () => Array.from(new Set(sites.map((site) => site.heritageKind))).sort(),
+    [sites]
+  )
+
+  const heritageTypeOptions = useMemo(
+    () => Array.from(new Set(sites.map((site) => site.heritageType))).sort(),
+    [sites]
+  )
+  const fuelTypeOptions = useMemo(
+    () => Array.from(new Set(sites.map((site) => site.fuelType))).sort(),
+    [sites]
+  )
+  const burnContextOptions = useMemo(
+    () => Array.from(new Set(sites.map((site) => site.burnContext))).sort(),
     [sites]
   )
 
@@ -219,13 +235,26 @@ const HeritagRegistry = () => {
     <div className="px-8 py-8 min-h-full" style={{ background: '#F0EDE8' }}>
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-black text-gray-900">Heritage Registry</h1>
-        <button className="bg-gray-900 text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 hover:bg-gray-700 transition-colors">
+        <button
+          type="button"
+          onClick={() => {
+            setAddSiteNotice(null)
+            setIsAddSiteOpen(true)
+          }}
+          className="bg-gray-900 text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 hover:bg-gray-700 transition-colors"
+        >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
           </svg>
           Add Site
         </button>
       </div>
+
+      {addSiteNotice && (
+        <div className="mb-4 bg-amber-50 border border-amber-100 text-amber-800 rounded-lg px-4 py-3 text-sm font-semibold">
+          {addSiteNotice}
+        </div>
+      )}
 
       {loadError && (
         <div className="mb-4 bg-red-50 border border-red-100 text-red-700 rounded-lg px-4 py-3 text-sm font-semibold">
@@ -358,6 +387,18 @@ const HeritagRegistry = () => {
           </tbody>
         </table>
       </div>
+
+      <AddSiteModal
+        open={isAddSiteOpen}
+        onClose={() => setIsAddSiteOpen(false)}
+        onSubmitted={() => {
+          setIsAddSiteOpen(false)
+          setAddSiteNotice('Site submitted (pending backend integration).')
+        }}
+        heritageTypeOptions={heritageTypeOptions}
+        fuelTypeOptions={fuelTypeOptions}
+        burnContextOptions={burnContextOptions}
+      />
     </div>
   )
 }
