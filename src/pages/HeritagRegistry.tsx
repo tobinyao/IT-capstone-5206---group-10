@@ -11,6 +11,8 @@ type HeritageFeatureCollection = {
   features: HeritageFeature[]
 }
 
+type SiteSource = 'user' | 'aboriginal' | 'non-aboriginal' | 'unknown'
+
 type RegistrySite = {
   id: string
   name: string
@@ -21,6 +23,7 @@ type RegistrySite = {
   burnContext: string
   vulnerability: RiskLevel
   score: number | null
+  source: SiteSource
 }
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? 'http://127.0.0.1:5000'
@@ -81,6 +84,15 @@ const riskValue = (value: unknown): RiskLevel => {
   return 'Low'
 }
 
+const sourceValue = (value: unknown): SiteSource => {
+  if (typeof value !== 'string') return 'unknown'
+  const normalized = value.trim().toLowerCase()
+  if (normalized === 'user') return 'user'
+  if (normalized === 'aboriginal') return 'aboriginal'
+  if (normalized === 'non-aboriginal') return 'non-aboriginal'
+  return 'unknown'
+}
+
 const featureToSite = (feature: HeritageFeature): RegistrySite => {
   const properties = feature.properties
   return {
@@ -93,7 +105,20 @@ const featureToSite = (feature: HeritageFeature): RegistrySite => {
     burnContext: textValue(properties.burn_management_context),
     vulnerability: riskValue(properties.vulnerability_level),
     score: numberValue(properties.vulnerability_score),
+    source: sourceValue(properties.source),
   }
+}
+
+const userSubmittedBadge = (source: SiteSource) => {
+  // Only show a badge for user submissions; aboriginal / non-aboriginal
+  // origin is already conveyed by the Heritage Kind column, so we keep
+  // those rows clean.
+  if (source !== 'user') return null
+  return (
+    <span className="inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-700">
+      User submitted
+    </span>
+  )
 }
 
 const vulnerabilityPill = (v: RiskLevel) => {
@@ -371,7 +396,10 @@ const HeritagRegistry = () => {
               filtered.map((site) => (
                 <tr key={site.id} className="border-t border-gray-100 hover:bg-gray-50 transition-colors">
                   <td className="px-4 py-3">
-                    <div className="font-bold text-gray-900">{site.name}</div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-gray-900">{site.name}</span>
+                      {userSubmittedBadge(site.source)}
+                    </div>
                     <div className="text-xs text-gray-400 mt-0.5">{site.id}</div>
                   </td>
                   <td className="px-4 py-3 text-gray-600">{site.heritageType}</td>
