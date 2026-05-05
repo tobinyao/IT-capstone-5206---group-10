@@ -24,6 +24,7 @@ type RegistrySite = {
   vulnerability: RiskLevel
   score: number | null
   source: SiteSource
+  enrichmentStatus: string | null
 }
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? 'http://127.0.0.1:5000'
@@ -93,6 +94,16 @@ const sourceValue = (value: unknown): SiteSource => {
   return 'unknown'
 }
 
+const enrichmentStatusValue = (value: unknown): string | null => {
+  if (typeof value !== 'string') return null
+  const trimmed = value.trim()
+  return trimmed === '' ? null : trimmed
+}
+
+// Returns the tooltip string for an "Unknown" cell, or undefined when no
+// enrichment_status was supplied (so we don't render an empty title attr).
+const unknownTooltip = (status: string | null) => status ?? undefined
+
 const featureToSite = (feature: HeritageFeature): RegistrySite => {
   const properties = feature.properties
   return {
@@ -106,6 +117,7 @@ const featureToSite = (feature: HeritageFeature): RegistrySite => {
     vulnerability: riskValue(properties.vulnerability_level),
     score: numberValue(properties.vulnerability_score),
     source: sourceValue(properties.source),
+    enrichmentStatus: enrichmentStatusValue(properties.enrichment_status),
   }
 }
 
@@ -416,15 +428,41 @@ const HeritagRegistry = () => {
                     </div>
                     <div className="text-xs text-gray-400 mt-0.5">{site.id}</div>
                   </td>
-                  <td className="px-4 py-3 text-gray-600">{site.heritageType}</td>
-                  <td className="px-4 py-3">{heritageKindBadge(site.heritageKind)}</td>
-                  <td className="px-4 py-3 text-gray-600">
+                  <td
+                    className="px-4 py-3 text-gray-600"
+                    title={site.heritageType === 'Unknown' ? unknownTooltip(site.enrichmentStatus) : undefined}
+                  >
+                    {site.heritageType}
+                  </td>
+                  <td
+                    className="px-4 py-3"
+                    title={site.heritageKind === 'Unknown' ? unknownTooltip(site.enrichmentStatus) : undefined}
+                  >
+                    {heritageKindBadge(site.heritageKind)}
+                  </td>
+                  <td
+                    className="px-4 py-3 text-gray-600"
+                    title={site.slope === null ? unknownTooltip(site.enrichmentStatus) : undefined}
+                  >
                     {site.slope === null ? 'Unknown' : `${site.slope.toFixed(2)} deg`}
                   </td>
-                  <td className="px-4 py-3 text-gray-600">{site.fuelType}</td>
-                  <td className="px-4 py-3 text-gray-600">{site.burnContext}</td>
+                  <td
+                    className="px-4 py-3 text-gray-600"
+                    title={site.fuelType === 'Unknown' ? unknownTooltip(site.enrichmentStatus) : undefined}
+                  >
+                    {site.fuelType}
+                  </td>
+                  <td
+                    className="px-4 py-3 text-gray-600"
+                    title={site.burnContext === 'Unknown' ? unknownTooltip(site.enrichmentStatus) : undefined}
+                  >
+                    {site.burnContext}
+                  </td>
                   <td className="px-4 py-3">{vulnerabilityPill(site.vulnerability)}</td>
-                  <td className="px-4 py-3 text-gray-600">
+                  <td
+                    className="px-4 py-3 text-gray-600"
+                    title={site.score === null ? unknownTooltip(site.enrichmentStatus) : undefined}
+                  >
                     {site.score === null ? 'Unknown' : site.score}
                   </td>
                   <td className="px-4 py-3">
