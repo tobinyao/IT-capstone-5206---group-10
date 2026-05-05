@@ -11,8 +11,6 @@ type HeritageFeatureCollection = {
   features: HeritageFeature[]
 }
 
-type SiteSource = 'user' | 'aboriginal' | 'non-aboriginal' | 'unknown'
-
 type RegistrySite = {
   id: string
   name: string
@@ -23,7 +21,12 @@ type RegistrySite = {
   burnContext: string
   vulnerability: RiskLevel
   score: number | null
-  source: SiteSource
+  // Raw, trimmed source string from the backend (e.g. "ACHIS", "DPLH006",
+  // "user", or "" when missing). We keep the original casing so the Source
+  // filter dropdown can display the values exactly as the backend sends
+  // them; the user-submitted check is done case-insensitively.
+  source: string
+  submittedBy: string | null
   enrichmentStatus: string | null
 }
 
@@ -85,13 +88,17 @@ const riskValue = (value: unknown): RiskLevel => {
   return 'Low'
 }
 
-const sourceValue = (value: unknown): SiteSource => {
-  if (typeof value !== 'string') return 'unknown'
-  const normalized = value.trim().toLowerCase()
-  if (normalized === 'user') return 'user'
-  if (normalized === 'aboriginal') return 'aboriginal'
-  if (normalized === 'non-aboriginal') return 'non-aboriginal'
-  return 'unknown'
+const sourceValue = (value: unknown): string => {
+  if (typeof value !== 'string') return ''
+  return value.trim()
+}
+
+const isUserSource = (source: string) => source.toLowerCase() === 'user'
+
+const submittedByValue = (value: unknown): string | null => {
+  if (typeof value !== 'string') return null
+  const trimmed = value.trim()
+  return trimmed === '' ? null : trimmed
 }
 
 const enrichmentStatusValue = (value: unknown): string | null => {
@@ -117,21 +124,27 @@ const featureToSite = (feature: HeritageFeature): RegistrySite => {
     vulnerability: riskValue(properties.vulnerability_level),
     score: numberValue(properties.vulnerability_score),
     source: sourceValue(properties.source),
+    submittedBy: submittedByValue(properties.added_by_user_name),
     enrichmentStatus: enrichmentStatusValue(properties.enrichment_status),
   }
 }
 
-const userSubmittedBadge = (source: SiteSource) => {
+const userSubmittedBadge = (source: string) => {
   // Only show a badge for user submissions; aboriginal / non-aboriginal
   // origin is already conveyed by the Heritage Kind column, so we keep
   // those rows clean.
-  if (source !== 'user') return null
+  if (!isUserSource(source)) return null
   return (
     <span className="inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-700">
       User submitted
     </span>
   )
 }
+
+// Render-friendly label for the Source filter dropdown. Backend-supplied
+// codes (e.g. "ACHIS", "DPLH006") are shown as-is; only the literal "user"
+// is rewritten to a user-facing phrase.
+const sourceLabel = (source: string) => (isUserSource(source) ? 'User submitted' : source)
 
 const vulnerabilityPill = (v: RiskLevel) => {
   const styles = {
@@ -176,6 +189,7 @@ const HeritagRegistry = () => {
   const [search, setSearch] = useState('')
   const [vulnFilter, setVulnFilter] = useState('All')
   const [heritageKindFilter, setHeritageKindFilter] = useState('All')
+  const [sourceFilter, setSourceFilter] = useState('All')
   const [heritageData, setHeritageData] = useState<HeritageFeatureCollection | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [isDownloading, setIsDownloading] = useState(false)
@@ -218,6 +232,14 @@ const HeritagRegistry = () => {
     [sites]
   )
 
+  const sourceOptions = useMemo(
+    () =>
+      Array.from(
+        new Set(sites.map((site) => site.source).filter((source) => source !== ''))
+      ).sort(),
+    [sites]
+  )
+
   // TODO: replace with a dedicated backend enum endpoint once available.
   // For now, derive Add Site dropdown options from the loaded heritage data
   // (distinct values, excluding empty strings and the "Unknown" fallback
@@ -250,7 +272,8 @@ const HeritagRegistry = () => {
       site.heritageType.toLowerCase().includes(query)
     const matchVuln = vulnFilter === 'All' || site.vulnerability === vulnFilter
     const matchHeritageKind = heritageKindFilter === 'All' || site.heritageKind === heritageKindFilter
-    return matchSearch && matchVuln && matchHeritageKind
+    const matchSource = sourceFilter === 'All' || site.source === sourceFilter
+    return matchSearch && matchVuln && matchHeritageKind && matchSource
   })
 
   const total = sites.length
@@ -260,6 +283,7 @@ const HeritagRegistry = () => {
   const activeFilterText = [
     vulnFilter !== 'All' ? vulnFilter : null,
     heritageKindFilter !== 'All' ? heritageKindFilter : null,
+    sourceFilter !== 'All' ? sourceLabel(sourceFilter) : null,
   ].filter(Boolean).join(' + ')
 
   const downloadHeritageData = async () => {
@@ -371,6 +395,16 @@ const HeritagRegistry = () => {
             <option key={heritageKind} value={heritageKind}>{heritageKind}</option>
           ))}
         </select>
+        <select
+          value={sourceFilter}
+          onChange={(e) => setSourceFilter(e.target.value)}
+          className="bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 outline-none cursor-pointer"
+        >
+          <option value="All">All sources</option>
+          {sourceOptions.map((source) => (
+            <option key={source} value={source}>{sourceLabel(source)}</option>
+          ))}
+        </select>
         <button
           onClick={downloadHeritageData}
           disabled={isDownloading}
@@ -405,7 +439,7 @@ const HeritagRegistry = () => {
               ))}
             </tr>
           </thead>
-          <tbody key={`${vulnFilter}-${heritageKindFilter}-${search}`}>
+          <tbody key={`${vulnFilter}-${heritageKindFilter}-${sourceFilter}-${search}`}>
             {!heritageData && !loadError ? (
               <tr>
                 <td colSpan={9} className="px-4 py-8 text-center text-gray-400 text-sm">
@@ -427,6 +461,11 @@ const HeritagRegistry = () => {
                       {userSubmittedBadge(site.source)}
                     </div>
                     <div className="text-xs text-gray-400 mt-0.5">{site.id}</div>
+                    {isUserSource(site.source) && site.submittedBy && (
+                      <div className="text-xs text-gray-400 mt-0.5">
+                        submitted by {site.submittedBy}
+                      </div>
+                    )}
                   </td>
                   <td
                     className="px-4 py-3 text-gray-600"
