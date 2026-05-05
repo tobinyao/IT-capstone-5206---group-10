@@ -58,6 +58,9 @@ const validate = (data: AddSiteFormData): Errors => {
 
   if (!isFiniteNumber(data.slope)) {
     errors.slope = 'Slope must be a number (degrees).'
+  } else {
+    const slope = Number(data.slope)
+    if (slope < 0 || slope > 90) errors.slope = 'Slope must be between 0 and 90 degrees.'
   }
 
   if (!isFiniteNumber(data.longitude)) {
@@ -266,6 +269,8 @@ const AddSiteModal = ({
                 id="slope"
                 type="number"
                 step="any"
+                min={0}
+                max={90}
                 value={formData.slope}
                 onChange={(e) => handleChange('slope', e.target.value)}
                 className={fieldInputClass}
