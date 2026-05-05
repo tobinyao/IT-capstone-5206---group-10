@@ -135,13 +135,27 @@ const vulnerabilityPill = (v: RiskLevel) => {
 }
 
 const heritageKindBadge = (heritageKind: string) => {
-  const style = heritageKind === 'Aboriginal'
+  // Backend may return either "Aboriginal" / "Non-Aboriginal" or the
+  // lowercase form "aboriginal" / "non-aboriginal" (per issue #56).
+  // Match case-insensitively so the colour is correct either way, and
+  // render a canonical label so the table casing stays consistent.
+  const normalized = heritageKind.trim().toLowerCase()
+  const isAboriginal = normalized === 'aboriginal'
+  const isNonAboriginal = normalized === 'non-aboriginal'
+
+  const style = isAboriginal
     ? 'bg-indigo-50 text-indigo-700'
     : 'bg-green-50 text-green-700'
 
+  const label = isAboriginal
+    ? 'Aboriginal'
+    : isNonAboriginal
+      ? 'Non-Aboriginal'
+      : heritageKind
+
   return (
     <span className={`inline-block px-2 py-0.5 rounded text-xs font-semibold ${style}`}>
-      {heritageKind}
+      {label}
     </span>
   )
 }

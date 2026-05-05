@@ -1,0 +1,20 @@
+fix(heritage-registry): make heritageKindBadge case-insensitive
+
+Issue #56 confirms that heritage_kind values from the backend are
+expected to be lowercase ("aboriginal" / "non-aboriginal"), but the
+existing badge compared the raw string against "Aboriginal" only.
+Lowercase rows therefore fell through to the non-Aboriginal branch
+and were rendered with the wrong colour.
+
+Changes in heritageKindBadge:
+  - Trim and lowercase the input before comparison so both the
+    capitalised legacy values and the new lowercase values map to
+    the correct style.
+  - Render a canonical display label ("Aboriginal" / "Non-Aboriginal")
+    so the table no longer shows mixed casing as the data source mix
+    changes. Unrecognised values fall back to the original string.
+
+Pure UI fix; no data fetching, filtering, or other call sites changed.
+Type-check (tsc --noEmit) passes.
+
+Refs: #56
