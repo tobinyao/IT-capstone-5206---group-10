@@ -23,7 +23,18 @@ import {
     Tooltip,
     Legend
   )
-  
+
+  // Burn context text -> numeric risk mapping (0-100 scale).
+  // Used as a temporary fallback because /api/layers/heritage does not
+  // currently expose a numeric burn_context_risk field on heritage features.
+  // Any value not in this map (other strings, empty, null, undefined) is
+  // skipped when computing the average burn-context risk in Model Insights.
+  // TODO: replace with backend burn_context_risk (issue #62)
+  const BURN_CONTEXT_RISK_MAP: Record<string, number> = {
+    'Inside DBCA burn option area': 30, // covered by a burn option -> lower risk
+    'No burn option overlap': 70,       // no burn management -> higher risk
+  }
+
   const barData = {
     labels: Array.from({ length: 24 }, (_, i) => i),
     datasets: [
