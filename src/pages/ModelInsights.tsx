@@ -414,17 +414,23 @@ import {
           </div>
         )}
 
-        {/* Error state: a single full-width banner. Satisfies issue #62
-            acceptance criterion "show a user-friendly error message if API
-            data cannot be loaded". */}
+        {/* Error state: a single full-width red card. The copy is fixed
+            (we deliberately do not surface the raw fetch error) so the user
+            always sees a friendly message that points at the most likely
+            cause: the backend Flask service not running on
+            http://127.0.0.1:5000. Satisfies issue #62 acceptance criterion
+            "show a user-friendly error message if API data cannot be
+            loaded". role="alert" so screen readers announce it on render. */}
         {!loading && error && (
           <div
             role="alert"
-            className="bg-red-50 border border-red-200 text-red-800 rounded-xl p-6"
+            className="bg-red-50 border-l-4 border-red-500 text-red-800 rounded-xl p-6 shadow-sm"
           >
-            <p className="font-semibold">Could not load Model Insights data.</p>
-            <p className="text-sm mt-1">
-              Please check that the backend API is running, then refresh the page.
+            <p className="font-semibold text-base">
+              We couldn't load Model Insights data.
+            </p>
+            <p className="text-sm mt-1 text-red-700">
+              Please check that the backend API is running and try again.
             </p>
           </div>
         )}
