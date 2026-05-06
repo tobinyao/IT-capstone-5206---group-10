@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import {
     Chart as ChartJS,
     CategoryScale,
@@ -26,6 +27,47 @@ import {
     Legend
   )
 
+  const API_BASE = import.meta.env.VITE_API_BASE_URL ?? 'http://127.0.0.1:5000'
+
+  type RiskLevel = 'High' | 'Medium' | 'Low'
+
+  type HeritageVulnerabilityWeights = {
+    fuel_risk: number
+    slope_risk: number
+    heritage_type_material_risk: number
+    burn_management_context: number
+  }
+
+  type ProcessedMetadata = {
+    counts: {
+      heritage_levels: Record<RiskLevel, number>
+    }
+    score_formula: {
+      heritage_vulnerability: HeritageVulnerabilityWeights
+    }
+  }
+
+  type HeritageFeatureProperties = {
+    vulnerability_score?: number | null
+    vulnerability_level?: RiskLevel
+    fuel_risk?: number | null
+    slope_risk?: number | null
+    heritage_type_risk?: number | null
+    slope_degrees?: number | null
+    burn_management_context?: string
+  }
+
+  type HeritageFeature = {
+    type: string
+    geometry: unknown
+    properties: HeritageFeatureProperties
+  }
+
+  type HeritageFeatureCollection = {
+    type: 'FeatureCollection'
+    features: HeritageFeature[]
+  }
+
   // Burn context text -> numeric risk mapping (0-100 scale).
   // Used as a temporary fallback because /api/layers/heritage does not
   // currently expose a numeric burn_context_risk field on heritage features.
@@ -38,6 +80,58 @@ import {
   }
 
   const ModelInsights = () => {
+    const [metadata, setMetadata] = useState<ProcessedMetadata | null>(null)
+    const [heritageFeatures, setHeritageFeatures] = useState<HeritageFeature[]>([])
+    const [loading, setLoading] = useState(true)
+    const [error, setError] = useState<string | null>(null)
+
+    // Load Model Insights data from the backend on mount. The two endpoints
+    // are fetched in parallel:
+    //   - /api/processed-metadata: heritage-level counts and model weights
+    //   - /api/layers/heritage:    per-site risk drivers (GeoJSON)
+    // The `active` flag prevents setState after the component unmounts.
+    useEffect(() => {
+      let active = true
+
+      async function loadData() {
+        try {
+          const [metadataResponse, heritageResponse] = await Promise.all([
+            fetch(`${API_BASE}/api/processed-metadata`),
+            fetch(`${API_BASE}/api/layers/heritage`),
+          ])
+
+          if (!metadataResponse.ok || !heritageResponse.ok) {
+            throw new Error('Could not load Model Insights data.')
+          }
+
+          const [metadataJson, heritageJson] = (await Promise.all([
+            metadataResponse.json(),
+            heritageResponse.json(),
+          ])) as [ProcessedMetadata, HeritageFeatureCollection]
+
+          if (!active) return
+
+          setMetadata(metadataJson)
+          setHeritageFeatures(heritageJson.features ?? [])
+          setError(null)
+        } catch {
+          if (active) {
+            setError('Could not load Model Insights data.')
+          }
+        } finally {
+          if (active) {
+            setLoading(false)
+          }
+        }
+      }
+
+      loadData()
+
+      return () => {
+        active = false
+      }
+    }, [])
+
     return (
       <div className="flex flex-col px-8 py-8 overflow-y-auto h-full gap-4" style={{ background: '#F0EDE8' }}>
 
