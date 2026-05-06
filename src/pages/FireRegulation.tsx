@@ -1,3 +1,5 @@
+import { Link } from 'react-router-dom'
+
 const FireRegulation = () => {
     return (
       <div className="flex flex-col items-center px-12 py-10 h-full overflow-y-auto" style={{ background: '#F0EDE8' }}>
@@ -62,9 +64,12 @@ const FireRegulation = () => {
   
         {/* Buttons */}
         <div className="flex gap-6 w-full max-w-4xl">
-          <button className="flex-1 py-5 rounded-xl bg-[#2E7D32] text-white text-lg font-bold hover:bg-[#1B5E20] transition-colors">
+          <Link
+            to="/mitigation-guide"
+            className="flex-1 py-5 rounded-xl bg-[#2E7D32] text-white text-lg font-bold hover:bg-[#1B5E20] transition-colors text-center"
+          >
             View Mitigation Guide
-          </button>
+          </Link>
           <button className="flex-1 py-5 rounded-xl bg-[#8B2020] text-white text-lg font-bold hover:bg-[#6B1010] transition-colors">
             Contact Local Planner
           </button>
