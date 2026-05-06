@@ -10,7 +10,7 @@ import {
     Tooltip,
     Legend,
   } from 'chart.js'
-  import { Bar, Scatter } from 'react-chartjs-2'
+  import { Bar, Doughnut, Scatter } from 'react-chartjs-2'
 
   // Register every Chart.js piece the upcoming Model Insights charts need:
   //   - Bar (Risk Level Distribution, Average Risk Driver Scores)
@@ -109,6 +109,69 @@ import {
   const average = (values: number[]): number => {
     if (values.length === 0) return 0
     return values.reduce((sum, value) => sum + value, 0) / values.length
+  }
+
+  // Chart.js options. Defined at module scope (not inside the component) so
+  // the same object reference is reused across renders and Chart.js does not
+  // need to diff a new options tree on every state update.
+
+  // Chart 1 - Risk Level Distribution (vertical bar).
+  const riskLevelChartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      y: {
+        beginAtZero: true,
+        title: { display: true, text: 'Heritage sites' },
+      },
+    },
+  }
+
+  // Chart 2 - Model Weight Breakdown (doughnut). Legend at the bottom keeps
+  // labels readable next to the small chart area.
+  const modelWeightChartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { position: 'bottom' as const },
+    },
+  }
+
+  // Chart 3 - Average Risk Driver Scores (horizontal bar). indexAxis: 'y'
+  // turns Chart.js Bar into a horizontal bar; the x-axis is locked to 0-100
+  // because every driver score is normalised to that range.
+  const averageRiskDriverChartOptions = {
+    indexAxis: 'y' as const,
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: {
+        beginAtZero: true,
+        max: 100,
+        title: { display: true, text: 'Average risk score (0-100)' },
+      },
+    },
+  }
+
+  // Chart 4 - Slope vs Vulnerability Score (scatter). y-axis is locked to
+  // 0-100 to match the vulnerability score scale; x-axis is left auto so the
+  // dataset's actual slope range drives the view.
+  const slopeVsVulnerabilityChartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { position: 'bottom' as const },
+    },
+    scales: {
+      x: { title: { display: true, text: 'Slope (degrees)' } },
+      y: {
+        min: 0,
+        max: 100,
+        title: { display: true, text: 'Vulnerability score (0-100)' },
+      },
+    },
   }
 
   const ModelInsights = () => {
@@ -332,6 +395,109 @@ import {
 
         {/* Title */}
         <h1 className="text-3xl font-black text-center mb-2">Heritage Fire Vulnerability Model Insights</h1>
+
+        {/* Loading state: four skeleton cards in the same 2x2 grid the real
+            charts will use, so the layout does not jump when data arrives. */}
+        {loading && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {Array.from({ length: 4 }).map((_, index) => (
+              <div
+                key={index}
+                className="bg-white rounded-xl p-6 h-80 animate-pulse"
+                aria-hidden="true"
+              >
+                <div className="h-5 w-1/3 bg-gray-200 rounded mb-3" />
+                <div className="h-3 w-2/3 bg-gray-100 rounded mb-6" />
+                <div className="h-48 bg-gray-100 rounded" />
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Error state: a single full-width banner. Satisfies issue #62
+            acceptance criterion "show a user-friendly error message if API
+            data cannot be loaded". */}
+        {!loading && error && (
+          <div
+            role="alert"
+            className="bg-red-50 border border-red-200 text-red-800 rounded-xl p-6"
+          >
+            <p className="font-semibold">Could not load Model Insights data.</p>
+            <p className="text-sm mt-1">
+              Please check that the backend API is running, then refresh the page.
+            </p>
+          </div>
+        )}
+
+        {/* Charts: 2x2 grid of cards. Each card has a fixed-height chart
+            container so Chart.js (with maintainAspectRatio: false) renders at
+            a predictable size inside the grid. */}
+        {!loading && !error && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+            {/* Chart 1 - Risk Level Distribution */}
+            <div className="bg-white rounded-xl p-6">
+              <h3 className="text-lg font-bold mb-1">Risk Level Distribution</h3>
+              <p className="text-sm text-gray-500 mb-4">
+                Number of heritage sites in each vulnerability level.
+              </p>
+              <div className="h-64">
+                {riskLevelChartData && (
+                  <Bar data={riskLevelChartData} options={riskLevelChartOptions} />
+                )}
+              </div>
+            </div>
+
+            {/* Chart 2 - Model Weight Breakdown */}
+            <div className="bg-white rounded-xl p-6">
+              <h3 className="text-lg font-bold mb-1">Model Weight Breakdown</h3>
+              <p className="text-sm text-gray-500 mb-4">
+                Weights used to calculate the heritage vulnerability score.
+              </p>
+              <div className="h-64">
+                {modelWeightChartData && (
+                  <Doughnut
+                    data={modelWeightChartData}
+                    options={modelWeightChartOptions}
+                  />
+                )}
+              </div>
+            </div>
+
+            {/* Chart 3 - Average Risk Driver Scores */}
+            <div className="bg-white rounded-xl p-6">
+              <h3 className="text-lg font-bold mb-1">Average Risk Driver Scores</h3>
+              <p className="text-sm text-gray-500 mb-4">
+                Mean score for each risk driver across all heritage sites (0-100).
+              </p>
+              <div className="h-64">
+                {averageRiskDriverChartData && (
+                  <Bar
+                    data={averageRiskDriverChartData}
+                    options={averageRiskDriverChartOptions}
+                  />
+                )}
+              </div>
+            </div>
+
+            {/* Chart 4 - Slope vs Vulnerability Score */}
+            <div className="bg-white rounded-xl p-6">
+              <h3 className="text-lg font-bold mb-1">Slope vs Vulnerability Score</h3>
+              <p className="text-sm text-gray-500 mb-4">
+                Each point is one heritage site, colored by its vulnerability level.
+              </p>
+              <div className="h-64">
+                {slopeVsVulnerabilityChartData && (
+                  <Scatter
+                    data={slopeVsVulnerabilityChartData}
+                    options={slopeVsVulnerabilityChartOptions}
+                  />
+                )}
+              </div>
+            </div>
+
+          </div>
+        )}
 
       </div>
     )
