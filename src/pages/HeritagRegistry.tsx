@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import AddSiteModal from '../components/AddSiteModal'
 
 type RiskLevel = 'High' | 'Medium' | 'Low'
 
@@ -20,6 +21,13 @@ type RegistrySite = {
   burnContext: string
   vulnerability: RiskLevel
   score: number | null
+  // Raw, trimmed source string from the backend (e.g. "ACHIS", "DPLH006",
+  // "user", or "" when missing). We keep the original casing so the Source
+  // filter dropdown can display the values exactly as the backend sends
+  // them; the user-submitted check is done case-insensitively.
+  source: string
+  submittedBy: string | null
+  enrichmentStatus: string | null
 }
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? 'http://127.0.0.1:5000'
@@ -80,6 +88,29 @@ const riskValue = (value: unknown): RiskLevel => {
   return 'Low'
 }
 
+const sourceValue = (value: unknown): string => {
+  if (typeof value !== 'string') return ''
+  return value.trim()
+}
+
+const isUserSource = (source: string) => source.toLowerCase() === 'user'
+
+const submittedByValue = (value: unknown): string | null => {
+  if (typeof value !== 'string') return null
+  const trimmed = value.trim()
+  return trimmed === '' ? null : trimmed
+}
+
+const enrichmentStatusValue = (value: unknown): string | null => {
+  if (typeof value !== 'string') return null
+  const trimmed = value.trim()
+  return trimmed === '' ? null : trimmed
+}
+
+// Returns the tooltip string for an "Unknown" cell, or undefined when no
+// enrichment_status was supplied (so we don't render an empty title attr).
+const unknownTooltip = (status: string | null) => status ?? undefined
+
 const featureToSite = (feature: HeritageFeature): RegistrySite => {
   const properties = feature.properties
   return {
@@ -92,8 +123,28 @@ const featureToSite = (feature: HeritageFeature): RegistrySite => {
     burnContext: textValue(properties.burn_management_context),
     vulnerability: riskValue(properties.vulnerability_level),
     score: numberValue(properties.vulnerability_score),
+    source: sourceValue(properties.source),
+    submittedBy: submittedByValue(properties.added_by_user_name),
+    enrichmentStatus: enrichmentStatusValue(properties.enrichment_status),
   }
 }
+
+const userSubmittedBadge = (source: string) => {
+  // Only show a badge for user submissions; aboriginal / non-aboriginal
+  // origin is already conveyed by the Heritage Kind column, so we keep
+  // those rows clean.
+  if (!isUserSource(source)) return null
+  return (
+    <span className="inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-700">
+      User submitted
+    </span>
+  )
+}
+
+// Render-friendly label for the Source filter dropdown. Backend-supplied
+// codes (e.g. "ACHIS", "DPLH006") are shown as-is; only the literal "user"
+// is rewritten to a user-facing phrase.
+const sourceLabel = (source: string) => (isUserSource(source) ? 'User submitted' : source)
 
 const vulnerabilityPill = (v: RiskLevel) => {
   const styles = {
@@ -109,13 +160,27 @@ const vulnerabilityPill = (v: RiskLevel) => {
 }
 
 const heritageKindBadge = (heritageKind: string) => {
-  const style = heritageKind === 'Aboriginal'
+  // Backend may return either "Aboriginal" / "Non-Aboriginal" or the
+  // lowercase form "aboriginal" / "non-aboriginal" (per issue #56).
+  // Match case-insensitively so the colour is correct either way, and
+  // render a canonical label so the table casing stays consistent.
+  const normalized = heritageKind.trim().toLowerCase()
+  const isAboriginal = normalized === 'aboriginal'
+  const isNonAboriginal = normalized === 'non-aboriginal'
+
+  const style = isAboriginal
     ? 'bg-indigo-50 text-indigo-700'
     : 'bg-green-50 text-green-700'
 
+  const label = isAboriginal
+    ? 'Aboriginal'
+    : isNonAboriginal
+      ? 'Non-Aboriginal'
+      : heritageKind
+
   return (
     <span className={`inline-block px-2 py-0.5 rounded text-xs font-semibold ${style}`}>
-      {heritageKind}
+      {label}
     </span>
   )
 }
@@ -124,10 +189,13 @@ const HeritagRegistry = () => {
   const [search, setSearch] = useState('')
   const [vulnFilter, setVulnFilter] = useState('All')
   const [heritageKindFilter, setHeritageKindFilter] = useState('All')
+  const [sourceFilter, setSourceFilter] = useState('All')
   const [heritageData, setHeritageData] = useState<HeritageFeatureCollection | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [isDownloading, setIsDownloading] = useState(false)
   const [downloadError, setDownloadError] = useState<string | null>(null)
+  const [isAddSiteOpen, setIsAddSiteOpen] = useState(false)
+  const [addSiteNotice, setAddSiteNotice] = useState<string | null>(null)
 
   useEffect(() => {
     let active = true
@@ -164,6 +232,38 @@ const HeritagRegistry = () => {
     [sites]
   )
 
+  const sourceOptions = useMemo(
+    () =>
+      Array.from(
+        new Set(sites.map((site) => site.source).filter((source) => source !== ''))
+      ).sort(),
+    [sites]
+  )
+
+  // TODO: replace with a dedicated backend enum endpoint once available.
+  // For now, derive Add Site dropdown options from the loaded heritage data
+  // (distinct values, excluding empty strings and the "Unknown" fallback
+  // produced by featureToSite for missing fields).
+  const distinctOptions = (values: string[]) => {
+    const cleaned = values
+      .map((value) => value.trim())
+      .filter((value) => value !== '' && value !== 'Unknown')
+    return Array.from(new Set(cleaned)).sort()
+  }
+
+  const heritageTypeOptions = useMemo(
+    () => distinctOptions(sites.map((site) => site.heritageType)),
+    [sites]
+  )
+  const fuelTypeOptions = useMemo(
+    () => distinctOptions(sites.map((site) => site.fuelType)),
+    [sites]
+  )
+  const burnContextOptions = useMemo(
+    () => distinctOptions(sites.map((site) => site.burnContext)),
+    [sites]
+  )
+
   const filtered = sites.filter((site) => {
     const query = search.toLowerCase()
     const matchSearch =
@@ -172,7 +272,8 @@ const HeritagRegistry = () => {
       site.heritageType.toLowerCase().includes(query)
     const matchVuln = vulnFilter === 'All' || site.vulnerability === vulnFilter
     const matchHeritageKind = heritageKindFilter === 'All' || site.heritageKind === heritageKindFilter
-    return matchSearch && matchVuln && matchHeritageKind
+    const matchSource = sourceFilter === 'All' || site.source === sourceFilter
+    return matchSearch && matchVuln && matchHeritageKind && matchSource
   })
 
   const total = sites.length
@@ -182,6 +283,7 @@ const HeritagRegistry = () => {
   const activeFilterText = [
     vulnFilter !== 'All' ? vulnFilter : null,
     heritageKindFilter !== 'All' ? heritageKindFilter : null,
+    sourceFilter !== 'All' ? sourceLabel(sourceFilter) : null,
   ].filter(Boolean).join(' + ')
 
   const downloadHeritageData = async () => {
@@ -219,13 +321,26 @@ const HeritagRegistry = () => {
     <div className="px-8 py-8 min-h-full" style={{ background: '#F0EDE8' }}>
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-black text-gray-900">Heritage Registry</h1>
-        <button className="bg-gray-900 text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 hover:bg-gray-700 transition-colors">
+        <button
+          type="button"
+          onClick={() => {
+            setAddSiteNotice(null)
+            setIsAddSiteOpen(true)
+          }}
+          className="bg-gray-900 text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 hover:bg-gray-700 transition-colors"
+        >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
           </svg>
           Add Site
         </button>
       </div>
+
+      {addSiteNotice && (
+        <div className="mb-4 bg-amber-50 border border-amber-100 text-amber-800 rounded-lg px-4 py-3 text-sm font-semibold">
+          {addSiteNotice}
+        </div>
+      )}
 
       {loadError && (
         <div className="mb-4 bg-red-50 border border-red-100 text-red-700 rounded-lg px-4 py-3 text-sm font-semibold">
@@ -280,6 +395,16 @@ const HeritagRegistry = () => {
             <option key={heritageKind} value={heritageKind}>{heritageKind}</option>
           ))}
         </select>
+        <select
+          value={sourceFilter}
+          onChange={(e) => setSourceFilter(e.target.value)}
+          className="bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 outline-none cursor-pointer"
+        >
+          <option value="All">All sources</option>
+          {sourceOptions.map((source) => (
+            <option key={source} value={source}>{sourceLabel(source)}</option>
+          ))}
+        </select>
         <button
           onClick={downloadHeritageData}
           disabled={isDownloading}
@@ -314,7 +439,7 @@ const HeritagRegistry = () => {
               ))}
             </tr>
           </thead>
-          <tbody key={`${vulnFilter}-${heritageKindFilter}-${search}`}>
+          <tbody key={`${vulnFilter}-${heritageKindFilter}-${sourceFilter}-${search}`}>
             {!heritageData && !loadError ? (
               <tr>
                 <td colSpan={9} className="px-4 py-8 text-center text-gray-400 text-sm">
@@ -331,18 +456,52 @@ const HeritagRegistry = () => {
               filtered.map((site) => (
                 <tr key={site.id} className="border-t border-gray-100 hover:bg-gray-50 transition-colors">
                   <td className="px-4 py-3">
-                    <div className="font-bold text-gray-900">{site.name}</div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-gray-900">{site.name}</span>
+                      {userSubmittedBadge(site.source)}
+                    </div>
                     <div className="text-xs text-gray-400 mt-0.5">{site.id}</div>
+                    {isUserSource(site.source) && site.submittedBy && (
+                      <div className="text-xs text-gray-400 mt-0.5">
+                        submitted by {site.submittedBy}
+                      </div>
+                    )}
                   </td>
-                  <td className="px-4 py-3 text-gray-600">{site.heritageType}</td>
-                  <td className="px-4 py-3">{heritageKindBadge(site.heritageKind)}</td>
-                  <td className="px-4 py-3 text-gray-600">
+                  <td
+                    className="px-4 py-3 text-gray-600"
+                    title={site.heritageType === 'Unknown' ? unknownTooltip(site.enrichmentStatus) : undefined}
+                  >
+                    {site.heritageType}
+                  </td>
+                  <td
+                    className="px-4 py-3"
+                    title={site.heritageKind === 'Unknown' ? unknownTooltip(site.enrichmentStatus) : undefined}
+                  >
+                    {heritageKindBadge(site.heritageKind)}
+                  </td>
+                  <td
+                    className="px-4 py-3 text-gray-600"
+                    title={site.slope === null ? unknownTooltip(site.enrichmentStatus) : undefined}
+                  >
                     {site.slope === null ? 'Unknown' : `${site.slope.toFixed(2)} deg`}
                   </td>
-                  <td className="px-4 py-3 text-gray-600">{site.fuelType}</td>
-                  <td className="px-4 py-3 text-gray-600">{site.burnContext}</td>
+                  <td
+                    className="px-4 py-3 text-gray-600"
+                    title={site.fuelType === 'Unknown' ? unknownTooltip(site.enrichmentStatus) : undefined}
+                  >
+                    {site.fuelType}
+                  </td>
+                  <td
+                    className="px-4 py-3 text-gray-600"
+                    title={site.burnContext === 'Unknown' ? unknownTooltip(site.enrichmentStatus) : undefined}
+                  >
+                    {site.burnContext}
+                  </td>
                   <td className="px-4 py-3">{vulnerabilityPill(site.vulnerability)}</td>
-                  <td className="px-4 py-3 text-gray-600">
+                  <td
+                    className="px-4 py-3 text-gray-600"
+                    title={site.score === null ? unknownTooltip(site.enrichmentStatus) : undefined}
+                  >
                     {site.score === null ? 'Unknown' : site.score}
                   </td>
                   <td className="px-4 py-3">
@@ -358,6 +517,18 @@ const HeritagRegistry = () => {
           </tbody>
         </table>
       </div>
+
+      <AddSiteModal
+        open={isAddSiteOpen}
+        onClose={() => setIsAddSiteOpen(false)}
+        onSubmitted={() => {
+          setIsAddSiteOpen(false)
+          setAddSiteNotice('Site submitted (pending backend integration).')
+        }}
+        heritageTypeOptions={heritageTypeOptions}
+        fuelTypeOptions={fuelTypeOptions}
+        burnContextOptions={burnContextOptions}
+      />
     </div>
   )
 }
