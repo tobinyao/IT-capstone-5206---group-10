@@ -4,16 +4,24 @@ import {
     LinearScale,
     BarElement,
     PointElement,
+    LineElement,
+    ArcElement,
     Tooltip,
     Legend,
   } from 'chart.js'
   import { Bar, Scatter } from 'react-chartjs-2'
 
+  // Register every Chart.js piece the upcoming Model Insights charts need:
+  //   - Bar (Risk Level Distribution, Average Risk Driver Scores)
+  //   - Doughnut (Model Weight Breakdown) -> ArcElement
+  //   - Scatter (Slope vs Vulnerability Score) -> PointElement, LineElement
   ChartJS.register(
     CategoryScale,
     LinearScale,
     BarElement,
     PointElement,
+    LineElement,
+    ArcElement,
     Tooltip,
     Legend
   )
