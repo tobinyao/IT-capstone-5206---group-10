@@ -1,3 +1,4 @@
+import { useState, type FormEvent } from 'react'
 import { MapContainer, TileLayer, CircleMarker, Tooltip } from 'react-leaflet'
 
 // Approx. centre of Australia (used to frame the continent in the small map)
@@ -6,6 +7,31 @@ const AUSTRALIA_CENTER: [number, number] = [-25, 134]
 const FRK_LATLNG: [number, number] = [-34.4, 117.8]
 
 const Login = () => {
+  // Controlled form state. Email/password are bound to the inputs;
+  // error holds the message rendered above the submit button; loading
+  // disables the form while a sign-in request is in flight.
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [error, setError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
+
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    setError(null)
+    setLoading(true)
+    try {
+      // TODO(#67): wire this up to POST /api/login via the auth API
+      // module and AuthContext in the next step. For now this is a
+      // stub so the controlled form, loading state and error path can
+      // be verified end-to-end in the UI.
+      await new Promise((resolve) => setTimeout(resolve, 400))
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Sign in failed. Please try again.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   return (
     <div className="grid grid-cols-2 min-h-screen">
 
@@ -159,41 +185,69 @@ const Login = () => {
           <h2 className="text-xl font-black text-gray-900 mb-1">Welcome back</h2>
           <p className="text-sm text-gray-400 mb-7">Sign in to your account to continue</p>
 
-          {/* Email */}
-          <div className="mb-4">
-            <label className="block text-xs font-bold text-gray-500 mb-1.5 tracking-wide">
-              Email address
-            </label>
-            <input
-              type="email"
-              placeholder="you@dpird.wa.gov.au"
-              className="w-full px-4 py-3 border border-gray-100 rounded-xl text-sm text-gray-900 bg-gray-50 outline-none focus:border-gray-300 focus:bg-white transition-colors"
-            />
-          </div>
+          <form onSubmit={handleSubmit} noValidate>
+            {/* Email */}
+            <div className="mb-4">
+              <label htmlFor="login-email" className="block text-xs font-bold text-gray-500 mb-1.5 tracking-wide">
+                Email address
+              </label>
+              <input
+                id="login-email"
+                type="email"
+                autoComplete="email"
+                required
+                disabled={loading}
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@dpird.wa.gov.au"
+                className="w-full px-4 py-3 border border-gray-100 rounded-xl text-sm text-gray-900 bg-gray-50 outline-none focus:border-gray-300 focus:bg-white transition-colors disabled:opacity-60"
+              />
+            </div>
 
-          {/* Password */}
-          <div className="mb-2">
-            <label className="block text-xs font-bold text-gray-500 mb-1.5 tracking-wide">
-              Password
-            </label>
-            <input
-              type="password"
-              placeholder="••••••••"
-              className="w-full px-4 py-3 border border-gray-100 rounded-xl text-sm text-gray-900 bg-gray-50 outline-none focus:border-gray-300 focus:bg-white transition-colors"
-            />
-          </div>
+            {/* Password */}
+            <div className="mb-2">
+              <label htmlFor="login-password" className="block text-xs font-bold text-gray-500 mb-1.5 tracking-wide">
+                Password
+              </label>
+              <input
+                id="login-password"
+                type="password"
+                autoComplete="current-password"
+                required
+                disabled={loading}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                className="w-full px-4 py-3 border border-gray-100 rounded-xl text-sm text-gray-900 bg-gray-50 outline-none focus:border-gray-300 focus:bg-white transition-colors disabled:opacity-60"
+              />
+            </div>
 
-          {/* Forgot */}
-          <div className="text-right mb-6">
-            <span className="text-xs text-gray-400 cursor-pointer hover:text-gray-600 transition-colors">
-              Forgot password?
-            </span>
-          </div>
+            {/* Forgot */}
+            <div className="text-right mb-6">
+              <span className="text-xs text-gray-400 cursor-pointer hover:text-gray-600 transition-colors">
+                Forgot password?
+              </span>
+            </div>
 
-          {/* Sign in btn */}
-          <button className="w-full bg-[#1A1A1A] text-white py-3 rounded-xl text-sm font-black hover:bg-gray-800 transition-colors mb-3">
-            Sign in
-          </button>
+            {/* Inline error message returned from the sign-in attempt. */}
+            {error && (
+              <div
+                role="alert"
+                className="mb-3 px-3 py-2 rounded-lg bg-red-50 border border-red-100 text-xs text-red-700"
+              >
+                {error}
+              </div>
+            )}
+
+            {/* Sign in btn */}
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-[#1A1A1A] text-white py-3 rounded-xl text-sm font-black hover:bg-gray-800 transition-colors mb-3 disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              {loading ? 'Signing in…' : 'Sign in'}
+            </button>
+          </form>
 
           {/* Divider */}
           <div className="flex items-center gap-3 my-4">
