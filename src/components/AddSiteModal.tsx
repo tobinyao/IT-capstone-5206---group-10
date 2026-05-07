@@ -8,6 +8,8 @@ export type AddSiteFormData = {
   slope: string
   fuel_type: string
   burn_context: string
+  vulnerability_score: string
+  vulnerability_level: 'High' | 'Medium' | 'Low' | ''
   longitude: string
   latitude: string
   added_by_user_name: string
@@ -17,10 +19,19 @@ export type AddSiteFormData = {
 type AddSiteModalProps = {
   open: boolean
   onClose: () => void
-  onSubmitted: () => void
+  onSubmitted: (feature: HeritageFeature) => void
   heritageTypeOptions: string[]
   fuelTypeOptions: string[]
   burnContextOptions: string[]
+}
+
+type HeritageFeature = {
+  type: string
+  geometry: {
+    type: string
+    coordinates: unknown
+  } | null
+  properties: Record<string, unknown>
 }
 
 const EMPTY_FORM: AddSiteFormData = {
@@ -30,6 +41,8 @@ const EMPTY_FORM: AddSiteFormData = {
   slope: '',
   fuel_type: '',
   burn_context: '',
+  vulnerability_score: '',
+  vulnerability_level: '',
   longitude: '',
   latitude: '',
   added_by_user_name: '',
@@ -54,6 +67,7 @@ const validate = (data: AddSiteFormData): Errors => {
   if (data.heritage_kind === '') errors.heritage_kind = 'Heritage kind is required.'
   if (isBlank(data.fuel_type)) errors.fuel_type = 'Fuel type is required.'
   if (isBlank(data.burn_context)) errors.burn_context = 'Burn context is required.'
+  if (data.vulnerability_level === '') errors.vulnerability_level = 'Vulnerability level is required.'
   if (isBlank(data.added_by_user_name)) errors.added_by_user_name = 'Your name is required.'
 
   if (!isFiniteNumber(data.slope)) {
@@ -61,6 +75,13 @@ const validate = (data: AddSiteFormData): Errors => {
   } else {
     const slope = Number(data.slope)
     if (slope < 0 || slope > 90) errors.slope = 'Slope must be between 0 and 90 degrees.'
+  }
+
+  if (!isFiniteNumber(data.vulnerability_score)) {
+    errors.vulnerability_score = 'Vulnerability score must be a number.'
+  } else {
+    const score = Number(data.vulnerability_score)
+    if (score < 0 || score > 100) errors.vulnerability_score = 'Vulnerability score must be between 0 and 100.'
   }
 
   if (!isFiniteNumber(data.longitude)) {
@@ -84,6 +105,7 @@ const fieldLabelClass = 'block text-xs font-bold uppercase tracking-wider text-g
 const fieldInputClass =
   'w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 outline-none focus:border-gray-400'
 const fieldErrorClass = 'mt-1 text-xs font-semibold text-red-600'
+const API_BASE = import.meta.env.VITE_API_BASE_URL ?? 'http://127.0.0.1:5000'
 
 const AddSiteModal = ({
   open,
@@ -95,12 +117,14 @@ const AddSiteModal = ({
 }: AddSiteModalProps) => {
   const [formData, setFormData] = useState<AddSiteFormData>(EMPTY_FORM)
   const [errors, setErrors] = useState<Errors>({})
+  const [submitError, setSubmitError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
     if (!open) {
       setFormData(EMPTY_FORM)
       setErrors({})
+      setSubmitError(null)
       setSubmitting(false)
     }
   }, [open])
@@ -125,8 +149,9 @@ const AddSiteModal = ({
     handleChange('heritage_photo', file)
   }
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
+    setSubmitError(null)
     const validationErrors = validate(formData)
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors)
@@ -134,15 +159,33 @@ const AddSiteModal = ({
     }
 
     setSubmitting(true)
-    // TODO: call backend POST when API ready
-    console.log('[AddSite] form submitted', {
-      ...formData,
-      heritage_photo: formData.heritage_photo
-        ? { name: formData.heritage_photo.name, size: formData.heritage_photo.size }
-        : null,
-    })
-    setSubmitting(false)
-    onSubmitted()
+    try {
+      const response = await fetch(`${API_BASE}/api/heritage`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...formData,
+          heritage_photo: undefined,
+          slope: Number(formData.slope),
+          longitude: Number(formData.longitude),
+          latitude: Number(formData.latitude),
+          vulnerability_score: Number(formData.vulnerability_score),
+        }),
+      })
+      const result = await response.json()
+
+      if (!response.ok) {
+        throw new Error(result?.error ?? 'Could not submit heritage site.')
+      }
+
+      onSubmitted(result.feature as HeritageFeature)
+    } catch (error) {
+      setSubmitError(error instanceof Error ? error.message : 'Could not submit heritage site.')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   return (
@@ -303,6 +346,39 @@ const AddSiteModal = ({
             </div>
           </div>
 
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className={fieldLabelClass} htmlFor="vulnerability_score">Vulnerability score *</label>
+              <input
+                id="vulnerability_score"
+                type="number"
+                step="any"
+                min={0}
+                max={100}
+                value={formData.vulnerability_score}
+                onChange={(e) => handleChange('vulnerability_score', e.target.value)}
+                className={fieldInputClass}
+              />
+              {errors.vulnerability_score && <p className={fieldErrorClass}>{errors.vulnerability_score}</p>}
+            </div>
+
+            <div>
+              <label className={fieldLabelClass} htmlFor="vulnerability_level">Vulnerability level *</label>
+              <select
+                id="vulnerability_level"
+                value={formData.vulnerability_level}
+                onChange={(e) => handleChange('vulnerability_level', e.target.value as AddSiteFormData['vulnerability_level'])}
+                className={fieldInputClass}
+              >
+                <option value="">Select…</option>
+                <option value="High">High</option>
+                <option value="Medium">Medium</option>
+                <option value="Low">Low</option>
+              </select>
+              {errors.vulnerability_level && <p className={fieldErrorClass}>{errors.vulnerability_level}</p>}
+            </div>
+          </div>
+
           <div>
             <label className={fieldLabelClass} htmlFor="added_by_user_name">Submitted by *</label>
             <input
@@ -331,6 +407,12 @@ const AddSiteModal = ({
               </p>
             )}
           </div>
+
+          {submitError && (
+            <div className="bg-red-50 border border-red-100 text-red-700 rounded-lg px-3 py-2 text-sm font-semibold">
+              {submitError}
+            </div>
+          )}
 
           <div className="flex justify-end gap-3 pt-2 border-t border-gray-100">
             <button
