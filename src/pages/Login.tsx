@@ -1,5 +1,7 @@
 import { useState, type FormEvent } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { MapContainer, TileLayer, CircleMarker, Tooltip } from 'react-leaflet'
+import { useAuth } from '../contexts/AuthContext'
 
 // Approx. centre of Australia (used to frame the continent in the small map)
 const AUSTRALIA_CENTER: [number, number] = [-25, 134]
@@ -15,16 +17,20 @@ const Login = () => {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
+  const { login } = useAuth()
+  const navigate = useNavigate()
+
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setError(null)
     setLoading(true)
     try {
-      // TODO(#67): wire this up to POST /api/login via the auth API
-      // module and AuthContext in the next step. For now this is a
-      // stub so the controlled form, loading state and error path can
-      // be verified end-to-end in the UI.
-      await new Promise((resolve) => setTimeout(resolve, 400))
+      // Delegates to AuthContext, which calls POST /api/login, then
+      // persists the returned token + user to state and localStorage.
+      await login(email, password)
+      // Redirect to the main app on success. `replace` so the login
+      // page is not left in the history stack behind the user.
+      navigate('/', { replace: true })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Sign in failed. Please try again.')
     } finally {
