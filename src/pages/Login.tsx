@@ -1,3 +1,10 @@
+import { MapContainer, TileLayer, CircleMarker, Tooltip } from 'react-leaflet'
+
+// Approx. centre of Australia (used to frame the continent in the small map)
+const AUSTRALIA_CENTER: [number, number] = [-25, 134]
+// Franklin District (FRK) — approx. Mt Barker / Albany area, Western Australia
+const FRK_LATLNG: [number, number] = [-34.4, 117.8]
+
 const Login = () => {
   return (
     <div className="grid grid-cols-2 min-h-screen">
@@ -50,6 +57,50 @@ const Login = () => {
                 <span className="text-xs text-gray-500">{item}</span>
               </div>
             ))}
+          </div>
+
+          {/* FRK Location Map — display-only mini map showing where the
+              Franklin District sits within Australia. All interactions are
+              disabled so users can read the location at a glance without
+              accidentally panning/zooming. */}
+          <div
+            className="mt-8 rounded-md overflow-hidden border border-[#2A2A2A]"
+            style={{ height: 200 }}
+          >
+            <MapContainer
+              center={AUSTRALIA_CENTER}
+              zoom={3}
+              scrollWheelZoom={false}
+              dragging={false}
+              doubleClickZoom={false}
+              touchZoom={false}
+              keyboard={false}
+              zoomControl={false}
+              attributionControl={false}
+              style={{ height: '100%', width: '100%', background: '#202020' }}
+            >
+              <TileLayer
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                attribution='&copy; OpenStreetMap contributors'
+              />
+              {/* Red marker for Franklin District. CircleMarker avoids the
+                  Vite/Leaflet default-icon asset issue and matches the
+                  app's accent colour. */}
+              <CircleMarker
+                center={FRK_LATLNG}
+                radius={6}
+                pathOptions={{
+                  color: '#ffffff',
+                  weight: 2,
+                  fillColor: '#B03A2E',
+                  fillOpacity: 1,
+                }}
+              >
+                <Tooltip permanent direction="bottom" offset={[0, 6]}>
+                  FRK
+                </Tooltip>
+              </CircleMarker>
+            </MapContainer>
           </div>
         </div>
 
