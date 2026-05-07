@@ -136,6 +136,17 @@ const Login = () => {
             </div>
           </div>
 
+          {/* ICIP / IDaS / Ownership and Conditions Statement.
+              Communicates project ownership, the cultural data principles
+              the tool follows, and the conditions of use. Logos are not
+              repeated here because they already appear in the Project
+              Partners cards above. */}
+          <div className="text-[11px] text-gray-500 leading-relaxed mb-4">
+            <p>Developed with Wagyl Kaip and The University of Western Australia.</p>
+            <p>This tool respects ICIP and IDaS principles.</p>
+            <p>For authorised research/project use only. Do not misuse, redistribute, or expose sensitive heritage data.</p>
+          </div>
+
           <div className="text-xs text-gray-700">
             © 2026 Fire Vulnerability Assessment Tool · Franklin District
           </div>
