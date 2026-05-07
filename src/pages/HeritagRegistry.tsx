@@ -31,7 +31,7 @@ type RegistrySite = {
 }
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? 'http://127.0.0.1:5000'
-const HERITAGE_DATA_URL = `${API_BASE}/api/layers/heritage`
+const HERITAGE_DATA_URL = `${API_BASE}/api/heritage-registry`
 
 const HERITAGE_CSV_FIELDS = [
   ['Identifier', 'identifier'],
@@ -196,6 +196,8 @@ const HeritagRegistry = () => {
   const [downloadError, setDownloadError] = useState<string | null>(null)
   const [isAddSiteOpen, setIsAddSiteOpen] = useState(false)
   const [addSiteNotice, setAddSiteNotice] = useState<string | null>(null)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
+  const [deletingSiteId, setDeletingSiteId] = useState<string | null>(null)
 
   useEffect(() => {
     let active = true
@@ -317,6 +319,41 @@ const HeritagRegistry = () => {
     }
   }
 
+  const deleteHeritageSite = async (site: RegistrySite) => {
+    if (!isUserSource(site.source)) return
+    const confirmed = window.confirm(`Delete ${site.name} from the registry?`)
+    if (!confirmed) return
+
+    setDeleteError(null)
+    setAddSiteNotice(null)
+    setDeletingSiteId(site.id)
+
+    try {
+      const response = await fetch(`${API_BASE}/api/heritage/${encodeURIComponent(site.id)}`, {
+        method: 'DELETE',
+      })
+      const result = await response.json()
+
+      if (!response.ok) {
+        throw new Error(result?.error ?? 'Could not delete heritage site.')
+      }
+
+      setHeritageData((current) => ({
+        type: 'FeatureCollection',
+        features: current?.features.filter((feature) => {
+          const properties = feature.properties
+          const featureId = textValue(properties.identifier ?? properties.id, '')
+          return featureId !== site.id
+        }) ?? [],
+      }))
+      setAddSiteNotice('User-submitted site deleted from the registry.')
+    } catch (error) {
+      setDeleteError(error instanceof Error ? error.message : 'Could not delete heritage site.')
+    } finally {
+      setDeletingSiteId(null)
+    }
+  }
+
   return (
     <div className="px-8 py-8 min-h-full" style={{ background: '#F0EDE8' }}>
       <div className="flex justify-between items-center mb-6">
@@ -345,6 +382,12 @@ const HeritagRegistry = () => {
       {loadError && (
         <div className="mb-4 bg-red-50 border border-red-100 text-red-700 rounded-lg px-4 py-3 text-sm font-semibold">
           {loadError}
+        </div>
+      )}
+
+      {deleteError && (
+        <div className="mb-4 bg-red-50 border border-red-100 text-red-700 rounded-lg px-4 py-3 text-sm font-semibold">
+          {deleteError}
         </div>
       )}
 
@@ -505,11 +548,27 @@ const HeritagRegistry = () => {
                     {site.score === null ? 'Unknown' : site.score}
                   </td>
                   <td className="px-4 py-3">
-                    <button className="text-gray-400 hover:text-gray-600 p-1 rounded hover:bg-gray-100">
-                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z"/>
-                      </svg>
-                    </button>
+                    {isUserSource(site.source) ? (
+                      <button
+                        type="button"
+                        onClick={() => deleteHeritageSite(site)}
+                        disabled={deletingSiteId === site.id}
+                        className="text-red-600 hover:text-red-700 px-2 py-1 rounded hover:bg-red-50 text-xs font-bold disabled:opacity-60"
+                      >
+                        {deletingSiteId === site.id ? 'Deleting...' : 'Delete'}
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        disabled
+                        title="Only user-submitted sites can be deleted"
+                        className="text-gray-300 p-1 rounded cursor-not-allowed"
+                      >
+                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                          <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z"/>
+                        </svg>
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))
@@ -521,9 +580,17 @@ const HeritagRegistry = () => {
       <AddSiteModal
         open={isAddSiteOpen}
         onClose={() => setIsAddSiteOpen(false)}
-        onSubmitted={() => {
+        onSubmitted={(feature) => {
+          setHeritageData((current) => ({
+            type: 'FeatureCollection',
+            features: [...(current?.features ?? []), feature],
+          }))
+          setSearch('')
+          setVulnFilter('All')
+          setHeritageKindFilter('All')
+          setSourceFilter('All')
           setIsAddSiteOpen(false)
-          setAddSiteNotice('Site submitted (pending backend integration).')
+          setAddSiteNotice('Site submitted and added to the registry.')
         }}
         heritageTypeOptions={heritageTypeOptions}
         fuelTypeOptions={fuelTypeOptions}
