@@ -8,6 +8,7 @@ import HeritagRegistry from './pages/HeritagRegistry'
 import SiteAssessment from './pages/SiteAssessment'
 import Login from './pages/Login'
 import MitigationGuide from './pages/MitigationGuide'
+import Register from './pages/Register'
 
 const MainLayout = () => {
   return (
@@ -33,6 +34,7 @@ const App = () => {
       <Routes>
         {/* Login page rendered without sidebar layout */}
         <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
         {/* All other routes require an authenticated session and share
             the main layout (sidebar + content). Unauthenticated visits
             are redirected to /login by ProtectedRoute. */}
