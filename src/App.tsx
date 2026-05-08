@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import Sidebar from './components/layout/Sidebar'
+import ProtectedRoute from './components/ProtectedRoute'
 import RiskMap from './pages/RiskMap'
 import ModelInsights from './pages/ModelInsights'
 import FireRegulation from './pages/FireRegulation'
@@ -32,8 +33,17 @@ const App = () => {
       <Routes>
         {/* Login page rendered without sidebar layout */}
         <Route path="/login" element={<Login />} />
-        {/* All other routes use the main layout (sidebar + content) */}
-        <Route path="/*" element={<MainLayout />} />
+        {/* All other routes require an authenticated session and share
+            the main layout (sidebar + content). Unauthenticated visits
+            are redirected to /login by ProtectedRoute. */}
+        <Route
+          path="/*"
+          element={
+            <ProtectedRoute>
+              <MainLayout />
+            </ProtectedRoute>
+          }
+        />
       </Routes>
     </BrowserRouter>
   )

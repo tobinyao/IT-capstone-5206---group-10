@@ -1,4 +1,30 @@
-import { NavLink } from 'react-router-dom'
+import { NavLink, useNavigate } from 'react-router-dom'
+import { useAuth } from '../../contexts/AuthContext'
+import type { AuthUser } from '../../api/auth'
+
+// Pick the most user-friendly label available for the signed-in user,
+// preferring display name, then email, then a generic fallback.
+function getDisplayName(user: AuthUser | null): string {
+  return user?.name || user?.email || 'Guest'
+}
+
+// Show the user's role when the backend supplied one, otherwise a
+// neutral label so the card always has two lines of text.
+function getRoleLabel(user: AuthUser | null): string {
+  if (user?.role) return user.role
+  return user ? 'Authenticated user' : 'Not signed in'
+}
+
+// Two-letter avatar initials. Prefer initials of the first two words
+// of the display name, otherwise the first two characters.
+function getInitials(user: AuthUser | null): string {
+  const source = (user?.name || user?.email || 'G').trim()
+  const parts = source.split(/\s+/)
+  if (parts.length >= 2 && parts[0] && parts[1]) {
+    return (parts[0][0] + parts[1][0]).toUpperCase()
+  }
+  return source.slice(0, 2).toUpperCase() || 'G'
+}
 
 const navItems = [
   { section: 'Assessment', links: [
@@ -13,6 +39,20 @@ const navItems = [
 ]
 
 const Sidebar = () => {
+  const { user, logout } = useAuth()
+  const navigate = useNavigate()
+
+  const displayName = getDisplayName(user)
+  const roleLabel = getRoleLabel(user)
+  const initials = getInitials(user)
+
+  const handleLogout = () => {
+    // Clear React state + localStorage, then send the user back to
+    // /login. `replace` so the protected page is not left in history.
+    logout()
+    navigate('/login', { replace: true })
+  }
+
   return (
     <aside className="w-56 bg-[#1A1A1A] text-white flex flex-col h-screen flex-shrink-0">
       {/* Logo */}
@@ -68,6 +108,54 @@ const Sidebar = () => {
 
       {/* Footer */}
       <div className="px-4 py-3 border-t border-[#2A2A2A]">
+        {/* Account — signed-in user info + logout. Sits above Project
+            Partners so the most actionable footer item is closest to the
+            user's eye. Falls back to a "Guest" card if no user is in
+            context (ProtectedRoute should normally prevent this). */}
+        <div className="text-[10px] font-bold tracking-widest uppercase text-gray-600 mb-2">
+          Account
+        </div>
+        <div className="mb-3">
+          <div className="flex items-center gap-2 rounded-md border border-[#2A2A2A] bg-[#202020] px-2 py-2">
+            <div
+              className="w-7 h-7 rounded-full bg-[#B03A2E] text-white text-[11px] font-bold flex items-center justify-center flex-shrink-0"
+              aria-hidden="true"
+            >
+              {initials}
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="text-[11px] font-semibold text-white leading-tight truncate" title={displayName}>
+                {displayName}
+              </div>
+              <div className="text-[10px] text-gray-500 leading-tight truncate" title={roleLabel}>
+                {roleLabel}
+              </div>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="w-full flex items-center justify-center gap-2 mt-2 px-2 py-2 rounded-md border border-[#2A2A2A] bg-[#202020] text-[11px] font-semibold text-gray-300 hover:bg-[#2A2A2A] hover:text-white hover:border-[#B03A2E] transition-colors"
+          >
+            <svg
+              width="12"
+              height="12"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+              <polyline points="16 17 21 12 16 7" />
+              <line x1="21" y1="12" x2="9" y2="12" />
+            </svg>
+            Log out
+          </button>
+        </div>
+
         <div className="text-[10px] font-bold tracking-widest uppercase text-gray-600 mb-2">
           Project Partners
         </div>

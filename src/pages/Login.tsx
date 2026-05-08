@@ -1,4 +1,43 @@
+import { useState, type FormEvent } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { MapContainer, TileLayer, CircleMarker, Tooltip } from 'react-leaflet'
+import { useAuth } from '../contexts/AuthContext'
+
+// Approx. centre of Australia (used to frame the continent in the small map)
+const AUSTRALIA_CENTER: [number, number] = [-25, 134]
+// Franklin District (FRK) — approx. Mt Barker / Albany area, Western Australia
+const FRK_LATLNG: [number, number] = [-34.4, 117.8]
+
 const Login = () => {
+  // Controlled form state. Email/password are bound to the inputs;
+  // error holds the message rendered above the submit button; loading
+  // disables the form while a sign-in request is in flight.
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [error, setError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
+
+  const { login } = useAuth()
+  const navigate = useNavigate()
+
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    setError(null)
+    setLoading(true)
+    try {
+      // Delegates to AuthContext, which calls POST /api/login, then
+      // persists the returned token + user to state and localStorage.
+      await login(email, password)
+      // Redirect to the main app on success. `replace` so the login
+      // page is not left in the history stack behind the user.
+      navigate('/', { replace: true })
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Sign in failed. Please try again.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   return (
     <div className="grid grid-cols-2 min-h-screen">
 
@@ -51,6 +90,50 @@ const Login = () => {
               </div>
             ))}
           </div>
+
+          {/* FRK Location Map — display-only mini map showing where the
+              Franklin District sits within Australia. All interactions are
+              disabled so users can read the location at a glance without
+              accidentally panning/zooming. */}
+          <div
+            className="mt-8 rounded-md overflow-hidden border border-[#2A2A2A]"
+            style={{ height: 200 }}
+          >
+            <MapContainer
+              center={AUSTRALIA_CENTER}
+              zoom={3}
+              scrollWheelZoom={false}
+              dragging={false}
+              doubleClickZoom={false}
+              touchZoom={false}
+              keyboard={false}
+              zoomControl={false}
+              attributionControl={false}
+              style={{ height: '100%', width: '100%', background: '#202020' }}
+            >
+              <TileLayer
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                attribution='&copy; OpenStreetMap contributors'
+              />
+              {/* Red marker for Franklin District. CircleMarker avoids the
+                  Vite/Leaflet default-icon asset issue and matches the
+                  app's accent colour. */}
+              <CircleMarker
+                center={FRK_LATLNG}
+                radius={6}
+                pathOptions={{
+                  color: '#ffffff',
+                  weight: 2,
+                  fillColor: '#B03A2E',
+                  fillOpacity: 1,
+                }}
+              >
+                <Tooltip permanent direction="bottom" offset={[0, 6]}>
+                  FRK
+                </Tooltip>
+              </CircleMarker>
+            </MapContainer>
+          </div>
         </div>
 
         <div>
@@ -85,6 +168,17 @@ const Login = () => {
             </div>
           </div>
 
+          {/* ICIP / IDaS / Ownership and Conditions Statement.
+              Communicates project ownership, the cultural data principles
+              the tool follows, and the conditions of use. Logos are not
+              repeated here because they already appear in the Project
+              Partners cards above. */}
+          <div className="text-[11px] text-gray-500 leading-relaxed mb-4">
+            <p>Developed with Wagyl Kaip and The University of Western Australia.</p>
+            <p>This tool respects ICIP and IDaS principles.</p>
+            <p>For authorised research/project use only. Do not misuse, redistribute, or expose sensitive heritage data.</p>
+          </div>
+
           <div className="text-xs text-gray-700">
             © 2026 Fire Vulnerability Assessment Tool · Franklin District
           </div>
@@ -97,41 +191,69 @@ const Login = () => {
           <h2 className="text-xl font-black text-gray-900 mb-1">Welcome back</h2>
           <p className="text-sm text-gray-400 mb-7">Sign in to your account to continue</p>
 
-          {/* Email */}
-          <div className="mb-4">
-            <label className="block text-xs font-bold text-gray-500 mb-1.5 tracking-wide">
-              Email address
-            </label>
-            <input
-              type="email"
-              placeholder="you@dpird.wa.gov.au"
-              className="w-full px-4 py-3 border border-gray-100 rounded-xl text-sm text-gray-900 bg-gray-50 outline-none focus:border-gray-300 focus:bg-white transition-colors"
-            />
-          </div>
+          <form onSubmit={handleSubmit} noValidate>
+            {/* Email */}
+            <div className="mb-4">
+              <label htmlFor="login-email" className="block text-xs font-bold text-gray-500 mb-1.5 tracking-wide">
+                Email address
+              </label>
+              <input
+                id="login-email"
+                type="email"
+                autoComplete="email"
+                required
+                disabled={loading}
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@dpird.wa.gov.au"
+                className="w-full px-4 py-3 border border-gray-100 rounded-xl text-sm text-gray-900 bg-gray-50 outline-none focus:border-gray-300 focus:bg-white transition-colors disabled:opacity-60"
+              />
+            </div>
 
-          {/* Password */}
-          <div className="mb-2">
-            <label className="block text-xs font-bold text-gray-500 mb-1.5 tracking-wide">
-              Password
-            </label>
-            <input
-              type="password"
-              placeholder="••••••••"
-              className="w-full px-4 py-3 border border-gray-100 rounded-xl text-sm text-gray-900 bg-gray-50 outline-none focus:border-gray-300 focus:bg-white transition-colors"
-            />
-          </div>
+            {/* Password */}
+            <div className="mb-2">
+              <label htmlFor="login-password" className="block text-xs font-bold text-gray-500 mb-1.5 tracking-wide">
+                Password
+              </label>
+              <input
+                id="login-password"
+                type="password"
+                autoComplete="current-password"
+                required
+                disabled={loading}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                className="w-full px-4 py-3 border border-gray-100 rounded-xl text-sm text-gray-900 bg-gray-50 outline-none focus:border-gray-300 focus:bg-white transition-colors disabled:opacity-60"
+              />
+            </div>
 
-          {/* Forgot */}
-          <div className="text-right mb-6">
-            <span className="text-xs text-gray-400 cursor-pointer hover:text-gray-600 transition-colors">
-              Forgot password?
-            </span>
-          </div>
+            {/* Forgot */}
+            <div className="text-right mb-6">
+              <span className="text-xs text-gray-400 cursor-pointer hover:text-gray-600 transition-colors">
+                Forgot password?
+              </span>
+            </div>
 
-          {/* Sign in btn */}
-          <button className="w-full bg-[#1A1A1A] text-white py-3 rounded-xl text-sm font-black hover:bg-gray-800 transition-colors mb-3">
-            Sign in
-          </button>
+            {/* Inline error message returned from the sign-in attempt. */}
+            {error && (
+              <div
+                role="alert"
+                className="mb-3 px-3 py-2 rounded-lg bg-red-50 border border-red-100 text-xs text-red-700"
+              >
+                {error}
+              </div>
+            )}
+
+            {/* Sign in btn */}
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-[#1A1A1A] text-white py-3 rounded-xl text-sm font-black hover:bg-gray-800 transition-colors mb-3 disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              {loading ? 'Signing in…' : 'Sign in'}
+            </button>
+          </form>
 
           {/* Divider */}
           <div className="flex items-center gap-3 my-4">
