@@ -26,6 +26,11 @@ export type LoginResponse = {
   user: AuthUser
 }
 
+export type RegisterResponse = {
+  message: string
+  user: AuthUser
+}
+
 /**
  * POST /api/login
  *
@@ -75,6 +80,42 @@ export async function login(email: string, password: string): Promise<LoginRespo
   }
 }
 
+/**
+ * POST /api/register
+ *
+ * Creates a new user account using email and password.
+ */
+export async function register(email: string, password: string): Promise<RegisterResponse> {
+  let response: Response
+  try {
+    response = await fetch(`${API_BASE_URL}/api/register`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+      body: JSON.stringify({ email, password }),
+    })
+  } catch {
+    throw new Error('Unable to reach the server. Please check your connection and try again.')
+  }
+
+  const body = await safeParseJson(response)
+
+  if (!response.ok) {
+    const message = pickMessage(body) || response.statusText || 'Registration failed.'
+    throw new Error(message)
+  }
+
+  if (!body || !body.user || typeof body.user !== 'object') {
+    throw new Error('Unexpected response from the server.')
+  }
+
+  return {
+    message: typeof body.message === 'string' ? body.message : 'User registered successfully',
+    user: body.user as AuthUser,
+  }
+}
 // Parse the response body as JSON, tolerating empty / non-JSON bodies
 // (which can happen on 204s, 5xx HTML error pages, etc.).
 async function safeParseJson(response: Response): Promise<Record<string, unknown> | null> {
