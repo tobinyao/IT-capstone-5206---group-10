@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sqlite3
 from pathlib import Path
 from typing import Any
@@ -13,7 +14,16 @@ from typing import Any
 BACKEND_DIR = Path(__file__).resolve().parents[1]
 REPO_DIR = BACKEND_DIR.parent
 PUBLIC_PROCESSED_DIR = REPO_DIR / "public" / "data" / "processed"
-DEFAULT_DB_PATH = BACKEND_DIR / "data" / "firewatch.sqlite"
+
+
+def resolve_default_db_path() -> Path:
+    raw_path = os.environ.get("SQLITE_DB_PATH")
+    if not raw_path:
+        return BACKEND_DIR / "data" / "firewatch.sqlite"
+    return Path(raw_path).expanduser()
+
+
+DEFAULT_DB_PATH = resolve_default_db_path()
 DEFAULT_HERITAGE_PATH = PUBLIC_PROCESSED_DIR / "heritage_all_layer.geojson"
 DEFAULT_BURN_OPTIONS_PATH = PUBLIC_PROCESSED_DIR / "burn_options_layer.geojson"
 DEFAULT_GRANITE_PATH = PUBLIC_PROCESSED_DIR / "granite_layer.geojson"
