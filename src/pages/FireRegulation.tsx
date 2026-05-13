@@ -5,13 +5,18 @@ const FireRegulation = () => {
       <div className="flex flex-col items-center px-12 py-10 h-full overflow-y-auto" style={{ background: '#F0EDE8' }}>
   
         {/* Title */}
-        <h1 className="text-3xl font-black uppercase tracking-wide mb-12">
+        <h1 className="text-3xl font-black uppercase tracking-wide mb-2">
           FIRE Risk REGULATION
         </h1>
-  
+
+        {/* Subtitle */}
+        <p className="text-base font-medium text-gray-700 italic mb-10 text-center">
+          Risk increases sharply within 100m of burnable vegetation
+        </p>
+
         {/* Buffer Diagram */}
         <div className="flex items-stretch w-full max-w-4xl mb-10 rounded-2xl overflow-hidden min-h-[320px]">
-  
+
           {/* Vegetation Panel */}
           <div className="flex-1 flex flex-col items-center justify-center py-10"
             style={{ background: 'linear-gradient(135deg, #d4edda, #a8d5b5)' }}>
@@ -23,17 +28,27 @@ const FireRegulation = () => {
             </svg>
             <p className="text-lg font-bold mt-4 text-gray-800">Vegetation</p>
           </div>
-  
-          {/* Buffer Bar */}
-          <div className="w-16 bg-[#8B2020] flex items-center justify-center flex-shrink-0">
+
+          {/* Inner High-Risk Band — 100m */}
+          <div className="w-12 bg-[#8B2020] flex items-center justify-center flex-shrink-0">
             <p
-              className="text-white text-sm font-black tracking-widest"
+              className="text-white text-xs font-black tracking-widest whitespace-nowrap"
+              style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}
+            >
+              100m Great Risk
+            </p>
+          </div>
+
+          {/* Outer Buffer Band — 1000m */}
+          <div className="w-20 bg-[#D97706] flex items-center justify-center flex-shrink-0">
+            <p
+              className="text-white text-sm font-black tracking-widest whitespace-nowrap"
               style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}
             >
               1000m Buffer
             </p>
           </div>
-  
+
           {/* Heritage Panel */}
           <div className="flex-1 flex flex-col items-center justify-center py-10 bg-gray-300 rounded-r-2xl">
             {/* Building SVG */}
@@ -54,8 +69,12 @@ const FireRegulation = () => {
         {/* Rule Text */}
         <div className="text-center mb-10">
           <p className="text-lg font-bold text-gray-900">
-            Heritage within 1000m of burnable vegetation are considered{' '}
-            <span className="text-[#8B2020]">AT RISK.</span>
+            Heritage within <span className="text-[#8B2020]">100m</span> of burnable vegetation are at{' '}
+            <span className="text-[#8B2020]">GREAT RISK.</span>
+          </p>
+          <p className="text-lg font-bold text-gray-900 mt-2">
+            Heritage within <span className="text-[#D97706]">1000m</span> falls within the{' '}
+            <span className="text-[#D97706]">planning buffer zone</span> — review and prepare.
           </p>
           <p className="text-lg font-bold text-gray-900 mt-2">
             Consult Planning guide for mitigation strategies.
@@ -70,9 +89,12 @@ const FireRegulation = () => {
           >
             View Mitigation Guide
           </Link>
-          <button className="flex-1 py-5 rounded-xl bg-[#8B2020] text-white text-lg font-bold hover:bg-[#6B1010] transition-colors">
+          <Link
+            to="/contacts"
+            className="flex-1 py-5 rounded-xl bg-[#8B2020] text-white text-lg font-bold hover:bg-[#6B1010] transition-colors text-center"
+          >
             Contact Local Planner
-          </button>
+          </Link>
         </div>
   
       </div>
