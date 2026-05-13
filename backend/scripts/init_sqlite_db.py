@@ -4,14 +4,22 @@
 from __future__ import annotations
 
 import argparse
+import os
 import sqlite3
 from pathlib import Path
 
-from services.db import resolve_db_path
-
 
 BACKEND_DIR = Path(__file__).resolve().parents[1]
-DEFAULT_DB_PATH = resolve_db_path()
+
+
+def resolve_default_db_path() -> Path:
+    raw_path = os.environ.get("SQLITE_DB_PATH")
+    if not raw_path:
+        return BACKEND_DIR / "data" / "firewatch.sqlite"
+    return Path(raw_path).expanduser()
+
+
+DEFAULT_DB_PATH = resolve_default_db_path()
 SCHEMA_PATH = BACKEND_DIR / "database" / "schema.sql"
 
 
