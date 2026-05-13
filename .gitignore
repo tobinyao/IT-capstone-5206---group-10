@@ -18,6 +18,8 @@ dist-ssr
 *.local
 *.sqlite
 *.sqlite3
+playwright-report/
+test-results/
 
 # Editor directories and files
 .vscode/*

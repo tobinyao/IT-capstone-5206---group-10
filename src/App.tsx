@@ -8,6 +8,10 @@ import HeritagRegistry from './pages/HeritagRegistry'
 import SiteAssessment from './pages/SiteAssessment'
 import Login from './pages/Login'
 import MitigationGuide from './pages/MitigationGuide'
+<<<<<<< HEAD
+=======
+import LocalContacts from './pages/LocalContacts'
+>>>>>>> origin/main
 
 const MainLayout = () => {
   return (
@@ -21,6 +25,7 @@ const MainLayout = () => {
           <Route path="/mitigation-guide" element={<MitigationGuide />} />
           <Route path="/registry" element={<HeritagRegistry />} />
           <Route path="/assessment" element={<SiteAssessment />} />
+          <Route path="/contacts" element={<LocalContacts />} />
         </Routes>
       </main>
     </div>
