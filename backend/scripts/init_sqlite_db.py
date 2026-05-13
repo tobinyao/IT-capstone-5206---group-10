@@ -7,9 +7,11 @@ import argparse
 import sqlite3
 from pathlib import Path
 
+from services.db import resolve_db_path
+
 
 BACKEND_DIR = Path(__file__).resolve().parents[1]
-DEFAULT_DB_PATH = BACKEND_DIR / "data" / "firewatch.sqlite"
+DEFAULT_DB_PATH = resolve_db_path()
 SCHEMA_PATH = BACKEND_DIR / "database" / "schema.sql"
 
 
