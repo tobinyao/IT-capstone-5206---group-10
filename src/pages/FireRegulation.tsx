@@ -89,9 +89,12 @@ const FireRegulation = () => {
           >
             View Mitigation Guide
           </Link>
-          <button className="flex-1 py-5 rounded-xl bg-[#8B2020] text-white text-lg font-bold hover:bg-[#6B1010] transition-colors">
+          <Link
+            to="/contacts"
+            className="flex-1 py-5 rounded-xl bg-[#8B2020] text-white text-lg font-bold hover:bg-[#6B1010] transition-colors text-center"
+          >
             Contact Local Planner
-          </button>
+          </Link>
         </div>
   
       </div>
