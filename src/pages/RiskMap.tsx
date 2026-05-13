@@ -697,6 +697,37 @@ function RiskMap() {
           </div>
         </section>
 
+        <section className="firewatch-card firewatch-help" aria-label="How to use this map">
+          <h2>How to use this map?</h2>
+
+          <div className="firewatch-help__list">
+            <div className="firewatch-help__item">
+              <strong>Move around</strong>
+              <span>Drag the map to pan across the Franklin District study area.</span>
+            </div>
+
+            <div className="firewatch-help__item">
+              <strong>Zoom in and out</strong>
+              <span>Use the + and - buttons, mouse wheel, or touchpad to inspect areas in more detail.</span>
+            </div>
+
+            <div className="firewatch-help__item">
+              <strong>Turn layers on or off</strong>
+              <span>Use Map Layers to show fire vulnerability, heritage places, fuel type, slope, granite influence, or burn options.</span>
+            </div>
+
+            <div className="firewatch-help__item">
+              <strong>Filter heritage places</strong>
+              <span>Use the risk and heritage type filters to focus on specific groups of heritage sites.</span>
+            </div>
+
+            <div className="firewatch-help__item">
+              <strong>View site details</strong>
+              <span>Click a heritage marker, burn area, or granite area to update the details panel below.</span>
+            </div>
+          </div>
+        </section>
+        
         <section className="firewatch-card" aria-label="Layer colour key">
           <h2>Layer Key</h2>
 
