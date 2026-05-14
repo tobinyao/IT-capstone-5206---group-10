@@ -652,15 +652,14 @@ function RiskMap() {
         <section className="firewatch-card" aria-label="Map layers">
           <h2>Map Layers</h2>
           {(
-            [
-              ['fire', 'Fire vulnerability'],
-              ['heritage', 'Heritage places'],
-              ['burn', 'Burn options'],
-              ['granite', 'Granite influence'],
-              ['fuel', 'Fuel type'],
-              ['slope', 'Slope'],
-            ] as Array<[LayerName, string]>
-          ).map(([layerName, label]) => (
+[
+  ['fire', 'Fire vulnerability overlay'],
+  ['heritage', 'Heritage place markers'],
+  ['burn', 'Prescribed burn areas'],
+  ['granite', 'Granite influence area'],
+  ['fuel', 'Fuel type overlay'],
+  ['slope', 'Slope overlay'],
+] as Array<[LayerName, string]>          ).map(([layerName, label]) => (
             <label key={layerName} className="firewatch-toggle-row">
               <input
                 type="checkbox"
@@ -729,9 +728,12 @@ function RiskMap() {
         </section>
         
         <section className="firewatch-card" aria-label="Layer colour key">
-          <h2>Layer Key</h2>
+  <h2>Layer Key</h2>
+  <p className="firewatch-card-helper">
+    Use this key to interpret the colours and symbols shown on the map.
+  </p>
 
-          <div className="firewatch-key-group">
+  <div className="firewatch-key-group">
             <h3>Fire Vulnerability</h3>
             <div>
               <span className="firewatch-key-box firewatch-key-box--high" />
