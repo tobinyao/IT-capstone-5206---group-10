@@ -697,9 +697,12 @@ function RiskMap() {
         </section>
 
         <section className="firewatch-card" aria-label="Layer colour key">
-          <h2>Layer Key</h2>
+  <h2>Layer Key</h2>
+  <p className="firewatch-card-helper">
+    Use this key to interpret the colours and symbols shown on the map.
+  </p>
 
-          <div className="firewatch-key-group">
+  <div className="firewatch-key-group">
             <h3>Fire Vulnerability</h3>
             <div>
               <span className="firewatch-key-box firewatch-key-box--high" />
