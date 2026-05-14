@@ -114,9 +114,9 @@ const defaultLayerVisibility: ToggleState = {
 }
 
 const defaultDetails: DetailState = {
-  title: 'Select a heritage place',
+  title: 'Select a map feature',
   intro:
-    'Drag to pan, scroll to zoom, and click a heritage place, burn option, or geology area to inspect source attributes.',
+    'Drag or zoom the map to explore the study area. Click a heritage place, burn option, or geology area to view its details here.',
   metrics: [],
 }
 
