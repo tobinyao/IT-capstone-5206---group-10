@@ -30,6 +30,8 @@ type RegistrySite = {
   enrichmentStatus: string | null
 }
 
+type RiskLookup = Record<string, number>
+
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? 'http://127.0.0.1:5000'
 const HERITAGE_DATA_URL = `${API_BASE}/api/heritage-registry`
 
@@ -81,6 +83,14 @@ const numberValue = (value: unknown) => {
     return Number.isFinite(parsed) ? parsed : null
   }
   return null
+}
+
+const addRiskLookupValue = (lookup: RiskLookup, label: unknown, risk: unknown) => {
+  const key = typeof label === 'string' ? label.trim() : ''
+  const value = numberValue(risk)
+  if (key !== '' && value !== null) {
+    lookup[key] = value
+  }
 }
 
 const riskValue = (value: unknown): RiskLevel => {
@@ -265,6 +275,34 @@ const HeritagRegistry = () => {
     () => distinctOptions(sites.map((site) => site.burnContext)),
     [sites]
   )
+
+  const heritageTypeRiskLookup = useMemo(() => {
+    const lookup: RiskLookup = {}
+    heritageData?.features.forEach((feature) => {
+      const properties = feature.properties
+      addRiskLookupValue(lookup, properties.place_type, properties.heritage_type_risk)
+      addRiskLookupValue(lookup, properties.heritage_type_risk_label, properties.heritage_type_risk)
+    })
+    return lookup
+  }, [heritageData])
+
+  const fuelRiskLookup = useMemo(() => {
+    const lookup: RiskLookup = {}
+    heritageData?.features.forEach((feature) => {
+      const properties = feature.properties
+      addRiskLookupValue(lookup, properties.fuel_class, properties.fuel_risk)
+    })
+    return lookup
+  }, [heritageData])
+
+  const burnContextRiskLookup = useMemo(() => {
+    const lookup: RiskLookup = {}
+    heritageData?.features.forEach((feature) => {
+      const properties = feature.properties
+      addRiskLookupValue(lookup, properties.burn_management_context, properties.burn_management_risk)
+    })
+    return lookup
+  }, [heritageData])
 
   const filtered = sites.filter((site) => {
     const query = search.toLowerCase()
@@ -595,6 +633,9 @@ const HeritagRegistry = () => {
         heritageTypeOptions={heritageTypeOptions}
         fuelTypeOptions={fuelTypeOptions}
         burnContextOptions={burnContextOptions}
+        heritageTypeRiskLookup={heritageTypeRiskLookup}
+        fuelRiskLookup={fuelRiskLookup}
+        burnContextRiskLookup={burnContextRiskLookup}
       />
     </div>
   )
