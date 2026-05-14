@@ -444,3 +444,24 @@
   font-size: 0.78rem;
   line-height: 1.35;
 }
+
+.firewatch-method__formula {
+  display: grid;
+  gap: 4px;
+}
+
+.firewatch-method__formula strong {
+  color: #202124;
+  font-size: 14px;
+}
+
+.firewatch-method__formula span {
+  color: #4f555b;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.firewatch-method__intro,
+.firewatch-method__note {
+  margin: 0;
+}

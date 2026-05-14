@@ -873,15 +873,21 @@ function RiskMap() {
   <p className="firewatch-method__intro">
     These weightings explain how vulnerability scores are calculated for heritage places and surrounding areas.
   </p>
-  <p>
-    <strong>Heritage score =</strong> fuel 45% + slope 25% + heritage type/material 25% + burn context 5%.
-  </p>          <p>
-            <strong>Area score =</strong> fuel 55% + slope 35% + granite influence 10%.
-          </p>
-          <p className="firewatch-method__note">
-            Unknown slope no longer produces High heritage risk; it is capped pending review.
-          </p>
-        </section>
+
+  <div className="firewatch-method__formula">
+    <strong>Heritage score</strong>
+    <span>Fuel 45% + slope 25% + heritage type/material 25% + burn context 5%.</span>
+  </div>
+
+  <div className="firewatch-method__formula">
+    <strong>Area score</strong>
+    <span>Fuel 55% + slope 35% + granite influence 10%.</span>
+  </div>
+
+  <p className="firewatch-method__note">
+    Unknown slope is capped pending review and does not automatically produce High heritage risk.
+  </p>
+</section>
       </aside>
 
       <section className="firewatch-map-wrap" aria-label="Interactive map">
