@@ -292,6 +292,29 @@
   gap: 10px;
 }
 
+.firewatch-details__heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.firewatch-details__heading h2 {
+  margin: 0;
+}
+
+.firewatch-details__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  background: #e7f2f4;
+  color: #297a8c;
+  font-size: 12px;
+  font-weight: 800;
+}
+
 .firewatch-metric-list {
   display: grid;
   gap: 10px;

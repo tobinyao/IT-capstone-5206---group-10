@@ -853,11 +853,13 @@ function RiskMap() {
           </div>
         </section>
 
-        <section className="firewatch-card firewatch-details" aria-live="polite">
-          <h2>{details.title}</h2>
-          <p className="firewatch-details__intro">{details.intro}</p>
-          <dl className="firewatch-metric-list">
-            {details.metrics.map((metric) => (
+<section className="firewatch-card firewatch-details" aria-live="polite">
+  <div className="firewatch-details__heading">
+    <span className="firewatch-details__icon" aria-hidden="true">i</span>
+    <h2>{details.title}</h2>
+  </div>
+  <p className="firewatch-details__intro">{details.intro}</p>
+  <dl className="firewatch-metric-list">            {details.metrics.map((metric) => (
               <div key={metric.label} className="firewatch-metric">
                 <dt>{metric.label}</dt>
                 <dd>{metric.value}</dd>
