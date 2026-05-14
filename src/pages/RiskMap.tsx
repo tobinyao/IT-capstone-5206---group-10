@@ -868,12 +868,14 @@ function RiskMap() {
           </dl>
         </section>
 
-        <section className="firewatch-card firewatch-method">
-          <h2>Score Method</h2>
-          <p>
-            <strong>Heritage score =</strong> fuel 45% + slope 25% + heritage type/material 25% + burn context 5%.
-          </p>
-          <p>
+<section className="firewatch-card firewatch-method">
+  <h2>Score Method</h2>
+  <p className="firewatch-method__intro">
+    These weightings explain how vulnerability scores are calculated for heritage places and surrounding areas.
+  </p>
+  <p>
+    <strong>Heritage score =</strong> fuel 45% + slope 25% + heritage type/material 25% + burn context 5%.
+  </p>          <p>
             <strong>Area score =</strong> fuel 55% + slope 35% + granite influence 10%.
           </p>
           <p className="firewatch-method__note">
