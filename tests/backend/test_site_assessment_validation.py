@@ -78,3 +78,51 @@ def test_site_assessment_accepts_floats(client):
     payload = response.get_json()
     assert "score" in payload
     assert "riskLevel" in payload
+
+
+def test_site_assessment_accepts_boundary_values(client):
+    response = client.post(
+        "/api/site-assessment",
+        json={
+            "fuelRisk": 0,
+            "slopeRisk": 100,
+            "heritageTypeRisk": 0,
+            "burnContext": 100,
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.get_json()
+    assert payload["score"] == 30
+
+
+@pytest.mark.parametrize(
+    ("fuel", "slope", "heritage", "burn", "expected_level"),
+    [
+        (100, 13, 0, 0, "Low"),
+        (100, 16, 0, 0, "Medium"),
+        (100, 76, 0, 0, "Medium"),
+        (100, 80, 0, 0, "High"),
+    ],
+)
+def test_site_assessment_risk_level_thresholds(
+    client,
+    fuel,
+    slope,
+    heritage,
+    burn,
+    expected_level,
+):
+    response = client.post(
+        "/api/site-assessment",
+        json={
+            "fuelRisk": fuel,
+            "slopeRisk": slope,
+            "heritageTypeRisk": heritage,
+            "burnContext": burn,
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.get_json()
+    assert payload["riskLevel"] == expected_level
