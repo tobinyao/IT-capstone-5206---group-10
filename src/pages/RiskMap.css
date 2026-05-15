@@ -89,6 +89,33 @@
   padding: 14px;
 }
 
+.firewatch-help {
+  gap: 12px;
+}
+
+.firewatch-help__list {
+  display: grid;
+  gap: 10px;
+}
+
+.firewatch-help__item {
+  display: grid;
+  gap: 3px;
+  padding-left: 10px;
+  border-left: 3px solid #297a8c;
+}
+
+.firewatch-help__item strong {
+  color: #202124;
+  font-size: 13px;
+}
+
+.firewatch-help__item span {
+  color: #62676c;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
 .firewatch-risk-page h2 {
   margin-bottom: 0;
   font-size: 16px;

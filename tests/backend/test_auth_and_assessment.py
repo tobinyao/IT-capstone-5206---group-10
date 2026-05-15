@@ -20,6 +20,39 @@ def test_register_accepts_valid_input(client):
     assert payload["user"]["email"] == "test@example.com"
 
 
+def test_login_rejects_missing_email(client):
+    response = client.post(
+        "/api/login",
+        json={"password": "secret12"},
+    )
+
+    assert response.status_code == 400
+    payload = response.get_json()
+    assert payload["error"] == "Email is required"
+
+
+def test_login_rejects_missing_password(client):
+    response = client.post(
+        "/api/login",
+        json={"email": "test@example.com"},
+    )
+
+    assert response.status_code == 400
+    payload = response.get_json()
+    assert payload["error"] == "Password is required"
+
+
+def test_login_accepts_valid_input(client):
+    response = client.post(
+        "/api/login",
+        json={"email": "test@example.com", "password": "secret12"},
+    )
+
+    assert response.status_code == 200
+    payload = response.get_json()
+    assert "message" in payload
+
+
 def test_site_assessment_validates_required_fields(client):
     response = client.post("/api/site-assessment", json={"fuelRisk": 50})
 

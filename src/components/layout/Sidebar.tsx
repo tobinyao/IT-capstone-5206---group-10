@@ -36,6 +36,9 @@ const navItems = [
     { to: '/registry', label: 'Heritage Registry' },
     { to: '/assessment', label: 'Site Assessment' },
   ]},
+  { section: 'About', links: [
+    { to: '/contacts', label: 'Local Contacts' },
+  ]},
 ]
 
 const Sidebar = () => {
