@@ -75,6 +75,11 @@ import {
     vulnerability_score?: number | null
     vulnerability_level?: RiskLevel
     fuel_risk?: number | null
+    // Categorical fuel class (e.g. "Tall closed forest", "Open forest").
+    // Used by the Fuel Type Breakdown stacked bar chart to group heritage
+    // sites by fuel class on the y-axis. Optional because some features in
+    // /api/layers/heritage may have a missing or blank fuel_class.
+    fuel_class?: string
     slope_risk?: number | null
     heritage_type_risk?: number | null
     slope_degrees?: number | null
