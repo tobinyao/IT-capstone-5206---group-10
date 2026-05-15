@@ -207,6 +207,48 @@ import {
     },
   }
 
+  // Chart 5 - Fuel Type Breakdown (horizontal stacked bar).
+  // indexAxis: 'y' makes each fuel class a horizontal bar; stacking both
+  // axes turns the three High/Medium/Low datasets into a single stacked
+  // bar per fuel class (the dataset colors come from LEVEL_COLORS in the
+  // data object). interaction.mode: 'index' surfaces all three risk-level
+  // counts in the tooltip together so the reader can compare High / Medium
+  // / Low for the hovered fuel class without picking each segment one by
+  // one. Legend sits at the bottom for consistency with the doughnut and
+  // the scatter chart.
+  //
+  // The leading underscore marks this value as intentionally unused for
+  // now so tsconfig's noUnusedLocals does not fail the build. It will be
+  // renamed to `fuelTypeByLevelChartOptions` and consumed by the new card
+  // when the JSX is wired up in a follow-up commit.
+  const _fuelTypeByLevelChartOptions = {
+    indexAxis: 'y' as const,
+    responsive: true,
+    maintainAspectRatio: false,
+    interaction: {
+      mode: 'index' as const,
+      intersect: false,
+    },
+    plugins: {
+      legend: { position: 'bottom' as const },
+    },
+    scales: {
+      x: {
+        stacked: true,
+        beginAtZero: true,
+        title: { display: true, text: 'Heritage sites' },
+        ticks: {
+          // Site counts are integers; suppress fractional gridlines.
+          precision: 0,
+        },
+      },
+      y: {
+        stacked: true,
+        title: { display: true, text: 'Fuel class' },
+      },
+    },
+  }
+
   const ModelInsights = () => {
     const [metadata, setMetadata] = useState<ProcessedMetadata | null>(null)
     const [heritageFeatures, setHeritageFeatures] = useState<HeritageFeature[]>([])
