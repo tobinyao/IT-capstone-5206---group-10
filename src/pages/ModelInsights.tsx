@@ -108,6 +108,34 @@ import {
     'No burn option overlap': 70,       // no burn management -> higher risk
   }
 
+  // Fuel class -> reference risk score (0-100). Mirrors the backend
+  // FUEL_TYPE_RISK table in backend/services/risk_normalization.py and is
+  // only used to derive a stable y-axis order for the Fuel Type Breakdown
+  // chart (highest-risk fuel class on top, lowest on bottom). Fuel classes
+  // present in the heritage features but missing from this map fall back to
+  // a score of -Infinity and sort to the bottom, so the chart still renders.
+  // TODO: expose this mapping via /api/processed-metadata so the frontend
+  // and backend cannot drift out of sync.
+  const FUEL_TYPE_RISK_SCORES: Record<string, number> = {
+    'Tall closed forest': 100,
+    'Closed forest': 96,
+    'Pine plantation': 94,
+    'Tall open forest': 92,
+    'Tall shrubland': 88,
+    'Open forest': 86,
+    'Woodland with shrubby understory': 84,
+    'Shrubland': 82,
+    'Low woodland': 67,
+    'Grassland': 62,
+    'Sedgeland': 58,
+    'Cropland': 50,
+    'Wetland': 35,
+    'Sparse grassland': 34,
+    'Built-up': 26,
+    'Bare ground': 12,
+    'Water': 5,
+  }
+
   // Arithmetic mean over an array of finite numbers. Returns 0 for an empty
   // array so chart datasets always render a numeric value (the chart itself
   // can be hidden by the parent when there is no data to show).
@@ -391,6 +419,87 @@ import {
           backgroundColor: LEVEL_COLORS[level],
           pointRadius: 5,
           pointHoverRadius: 7,
+        })),
+      }
+    }, [heritageFeatures])
+
+    // Chart 5 - Fuel Type Breakdown (stacked horizontal bar).
+    // Aggregates heritage features into a Record<fuel_class, Record<RiskLevel, number>>
+    // so each fuel class becomes one bar on the y-axis with three stacked
+    // segments (High / Medium / Low). Filtering mirrors the distinctOptions
+    // helper in HeritagRegistry.tsx: fuel_class values that are missing,
+    // blank after trim, or equal to the "Unknown" fallback are skipped so
+    // they do not pollute the chart with a meaningless category. Features
+    // without a recognised vulnerability_level are also skipped because
+    // they cannot be slotted into a stack segment.
+    //
+    // The y-axis order is driven by FUEL_TYPE_RISK_SCORES (descending),
+    // which keeps the highest-risk fuel class on top and gives the chart a
+    // stable order across renders even as the underlying dataset changes.
+    // Falls back to total site count as a tie-breaker, then alphabetical,
+    // so the order is fully deterministic.
+    //
+    // The leading underscore marks this value as intentionally unused for
+    // now so tsconfig's noUnusedLocals does not fail the build. It will be
+    // renamed to `fuelTypeByLevelChartData` and consumed by the new card
+    // when the JSX is wired up in a follow-up commit.
+    const _fuelTypeByLevelChartData = useMemo(() => {
+      if (heritageFeatures.length === 0) return null
+
+      const countsByFuelClass: Record<string, Record<RiskLevel, number>> = {}
+
+      for (const feature of heritageFeatures) {
+        const rawFuelClass = feature.properties.fuel_class
+        const level = feature.properties.vulnerability_level
+
+        // Skip features with no usable fuel class. trim() guards against
+        // whitespace-only strings; "Unknown" is the documented fallback
+        // produced upstream when the source data is missing.
+        if (typeof rawFuelClass !== 'string') continue
+        const fuelClass = rawFuelClass.trim()
+        if (fuelClass === '' || fuelClass === 'Unknown') continue
+
+        // Skip features that cannot be placed in a High/Medium/Low stack.
+        if (level !== 'High' && level !== 'Medium' && level !== 'Low') continue
+
+        if (!countsByFuelClass[fuelClass]) {
+          countsByFuelClass[fuelClass] = { High: 0, Medium: 0, Low: 0 }
+        }
+        countsByFuelClass[fuelClass][level] += 1
+      }
+
+      const fuelClasses = Object.keys(countsByFuelClass)
+      if (fuelClasses.length === 0) return null
+
+      // Sort by reference risk score (desc), then total site count (desc),
+      // then alphabetical, so the y-axis order is stable and meaningful.
+      const sortedFuelClasses = fuelClasses.sort((a, b) => {
+        const riskA = FUEL_TYPE_RISK_SCORES[a] ?? -Infinity
+        const riskB = FUEL_TYPE_RISK_SCORES[b] ?? -Infinity
+        if (riskA !== riskB) return riskB - riskA
+
+        const totalA =
+          countsByFuelClass[a].High +
+          countsByFuelClass[a].Medium +
+          countsByFuelClass[a].Low
+        const totalB =
+          countsByFuelClass[b].High +
+          countsByFuelClass[b].Medium +
+          countsByFuelClass[b].Low
+        if (totalA !== totalB) return totalB - totalA
+
+        return a.localeCompare(b)
+      })
+
+      return {
+        labels: sortedFuelClasses,
+        datasets: RISK_LEVELS.map((level) => ({
+          label: level,
+          data: sortedFuelClasses.map(
+            (fuelClass) => countsByFuelClass[fuelClass][level]
+          ),
+          backgroundColor: LEVEL_COLORS[level],
+          borderWidth: 0,
         })),
       }
     }, [heritageFeatures])
