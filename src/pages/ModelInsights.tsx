@@ -216,12 +216,7 @@ import {
   // / Low for the hovered fuel class without picking each segment one by
   // one. Legend sits at the bottom for consistency with the doughnut and
   // the scatter chart.
-  //
-  // The leading underscore marks this value as intentionally unused for
-  // now so tsconfig's noUnusedLocals does not fail the build. It will be
-  // renamed to `fuelTypeByLevelChartOptions` and consumed by the new card
-  // when the JSX is wired up in a follow-up commit.
-  const _fuelTypeByLevelChartOptions = {
+  const fuelTypeByLevelChartOptions = {
     indexAxis: 'y' as const,
     responsive: true,
     maintainAspectRatio: false,
@@ -480,12 +475,7 @@ import {
     // stable order across renders even as the underlying dataset changes.
     // Falls back to total site count as a tie-breaker, then alphabetical,
     // so the order is fully deterministic.
-    //
-    // The leading underscore marks this value as intentionally unused for
-    // now so tsconfig's noUnusedLocals does not fail the build. It will be
-    // renamed to `fuelTypeByLevelChartData` and consumed by the new card
-    // when the JSX is wired up in a follow-up commit.
-    const _fuelTypeByLevelChartData = useMemo(() => {
+    const fuelTypeByLevelChartData = useMemo(() => {
       if (heritageFeatures.length === 0) return null
 
       const countsByFuelClass: Record<string, Record<RiskLevel, number>> = {}
@@ -552,11 +542,13 @@ import {
         {/* Title */}
         <h1 className="text-3xl font-black text-center mb-2">Heritage Fire Vulnerability Model Insights</h1>
 
-        {/* Loading state: four skeleton cards in the same 2x2 grid the real
-            charts will use, so the layout does not jump when data arrives. */}
+        {/* Loading state: five skeleton cards in the same 2-column grid the
+            real charts will use, so the layout does not jump when data
+            arrives. The fifth card (Fuel Type Breakdown) sits on its own
+            row at the bottom, matching the real grid below. */}
         {loading && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {Array.from({ length: 4 }).map((_, index) => (
+            {Array.from({ length: 5 }).map((_, index) => (
               <div
                 key={index}
                 className="bg-white rounded-xl p-6 h-80 animate-pulse"
@@ -591,9 +583,11 @@ import {
           </div>
         )}
 
-        {/* Charts: 2x2 grid of cards. Each card has a fixed-height chart
-            container so Chart.js (with maintainAspectRatio: false) renders at
-            a predictable size inside the grid. */}
+        {/* Charts: 2-column grid of cards (2x2 for the original four, with
+            the Fuel Type Breakdown card landing on its own row at the
+            bottom). Each card has a fixed-height chart container so
+            Chart.js (with maintainAspectRatio: false) renders at a
+            predictable size inside the grid. */}
         {!loading && !error && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
@@ -653,6 +647,37 @@ import {
                   <Scatter
                     data={slopeVsVulnerabilityChartData}
                     options={slopeVsVulnerabilityChartOptions}
+                  />
+                )}
+              </div>
+            </div>
+
+            {/* Chart 5 - Fuel Type Breakdown (Top Model Driver).
+                Sits on its own row at the bottom of the 2-column grid.
+                The subtitle reads the Fuel weight live from the metadata
+                response so the percentage stays in sync if the backend
+                ever retunes the model weights. Falls back to a static
+                explanation if the weight is missing or non-numeric. */}
+            <div className="bg-white rounded-xl p-6">
+              <h3 className="text-lg font-bold mb-1">
+                Fuel Type Breakdown (Top Model Driver)
+              </h3>
+              <p className="text-sm text-gray-500 mb-4">
+                {(() => {
+                  const fuelWeight =
+                    metadata?.score_formula.heritage_vulnerability.fuel_risk
+                  if (typeof fuelWeight === 'number' && Number.isFinite(fuelWeight)) {
+                    const fuelWeightPercent = Math.round(fuelWeight * 100)
+                    return `Fuel risk is weighted ${fuelWeightPercent}% — sites grouped by fuel class and stacked by vulnerability level.`
+                  }
+                  return 'Heritage sites grouped by fuel class and stacked by vulnerability level.'
+                })()}
+              </p>
+              <div className="h-64">
+                {fuelTypeByLevelChartData && (
+                  <Bar
+                    data={fuelTypeByLevelChartData}
+                    options={fuelTypeByLevelChartOptions}
                   />
                 )}
               </div>
