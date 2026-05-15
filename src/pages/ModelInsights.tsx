@@ -660,7 +660,7 @@ import {
                 explanation if the weight is missing or non-numeric. */}
             <div className="bg-white rounded-xl p-6">
               <h3 className="text-lg font-bold mb-1">
-                Fuel Type Breakdown (Top Model Driver)
+                Heritage Sites by Fuel Type and Vulnerability Level
               </h3>
               <p className="text-sm text-gray-500 mb-4">
                 {(() => {
