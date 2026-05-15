@@ -78,3 +78,20 @@ def test_site_assessment_accepts_floats(client):
     payload = response.get_json()
     assert "score" in payload
     assert "riskLevel" in payload
+
+
+def test_site_assessment_accepts_boundary_values(client):
+    response = client.post(
+        "/api/site-assessment",
+        json={
+            "fuelRisk": 0,
+            "slopeRisk": 100,
+            "heritageTypeRisk": 0,
+            "burnContext": 100,
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.get_json()
+    assert payload["breakdown"]["fuelRisk"] == 0
+    assert payload["breakdown"]["slopeRisk"] == 100
