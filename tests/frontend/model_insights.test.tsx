@@ -136,6 +136,72 @@ describe('ModelInsights page', () => {
       screen.getByText('Please check that the backend API is running and try again.')
     ).toBeInTheDocument()
   })
+
+  it('renders the new chart even when fuel_class is missing', async () => {
+    const fetchMock = vi.fn(async (input: string | URL | Request) => {
+      const url = String(input)
+
+      if (url.endsWith('/api/processed-metadata')) {
+        return okResponse({
+          counts: {
+            heritage_levels: {
+              High: 1,
+              Medium: 0,
+              Low: 0,
+            },
+          },
+          score_formula: {
+            heritage_vulnerability: {
+              fuel_risk: 0.45,
+              slope_risk: 0.25,
+              heritage_type_material_risk: 0.25,
+              burn_management_context: 0.05,
+            },
+          },
+        })
+      }
+
+      if (url.endsWith('/api/layers/heritage')) {
+        return okResponse({
+          type: 'FeatureCollection',
+          features: [
+            {
+              type: 'Feature',
+              geometry: null,
+              properties: {
+                vulnerability_score: 72,
+                vulnerability_level: 'High',
+                fuel_risk: 80,
+                slope_risk: 65,
+                heritage_type_risk: 55,
+                slope_degrees: 18,
+                burn_management_context: 'Inside DBCA burn option area',
+              },
+            },
+          ],
+        })
+      }
+
+      throw new Error(`Unexpected fetch request: ${url}`)
+    })
+
+    vi.stubGlobal('fetch', fetchMock)
+
+    render(<ModelInsights />)
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2))
+
+    expect(await screen.findByText('Average Risk Driver Scores')).toBeInTheDocument()
+    expect(screen.getByText('Slope vs Vulnerability Score')).toBeInTheDocument()
+
+    const barCharts = screen.getAllByTestId('chart-bar')
+    expect(barCharts).toHaveLength(2)
+    expect(barCharts[1]).toHaveTextContent(
+      'Fuel Risk,Slope Risk,Heritage Type Risk,Burn Context Risk'
+    )
+    expect(screen.getByTestId('chart-scatter')).toBeInTheDocument()
+    expect(screen.queryByRole('alert')).toBeNull()
+  })
 })
 
 function okResponse(payload: unknown) {
