@@ -26,6 +26,10 @@ function getInitials(user: AuthUser | null): string {
   return source.slice(0, 2).toUpperCase() || 'G'
 }
 
+// Local Contacts is intentionally not surfaced in the sidebar. It is
+// reached only from the Fire Risk Regulation page via the "Contact
+// Local Planner" call-to-action, so the entry point stays contextual
+// to the regulation workflow.
 const navItems = [
   { section: 'Assessment', links: [
     { to: '/', label: 'Risk Map' },
@@ -35,9 +39,6 @@ const navItems = [
   { section: 'Data', links: [
     { to: '/registry', label: 'Heritage Registry' },
     { to: '/assessment', label: 'Site Assessment' },
-  ]},
-  { section: 'About', links: [
-    { to: '/contacts', label: 'Local Contacts' },
   ]},
 ]
 
