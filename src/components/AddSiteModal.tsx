@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { ChangeEvent, FormEvent } from 'react'
 
 export type AddSiteFormData = {
@@ -23,6 +23,9 @@ type AddSiteModalProps = {
   heritageTypeOptions: string[]
   fuelTypeOptions: string[]
   burnContextOptions: string[]
+  heritageTypeRiskLookup: Record<string, number>
+  fuelRiskLookup: Record<string, number>
+  burnContextRiskLookup: Record<string, number>
 }
 
 type HeritageFeature = {
@@ -59,6 +62,86 @@ const isFiniteNumber = (value: string) => {
   return Number.isFinite(parsed)
 }
 
+const FUEL_TYPE_SCORE: Record<string, number> = {
+  'Tall closed forest': 100,
+  'Closed forest': 96,
+  'Pine plantation': 94,
+  'Tall open forest': 92,
+  'Tall shrubland': 88,
+  'Open forest': 86,
+  'Woodland with shrubby understory': 84,
+  'Shrubland': 82,
+  'Low woodland': 67,
+  'Grassland': 62,
+  'Sedgeland': 58,
+  'Cropland': 50,
+  'Wetland': 35,
+  'Sparse grassland': 34,
+  'Built-up': 26,
+  'Bare ground': 12,
+  'Water': 5,
+}
+
+const HERITAGE_TYPE_SCORE: Record<string, number> = {
+  'Modified tree / timber / wooden structure': 95,
+  'Rock art / painting / engraving / rock shelter': 86,
+  'Burial / grave / cemetery': 76,
+  'Ceremonial / creation / dreaming / mythological place': 72,
+  'General built heritage': 72,
+  'Midden / organic deposit': 62,
+  'Camp / historical place / water source': 60,
+  'Artefact scatter / quarry / grinding area / sub-surface material': 52,
+  'Brick / stone / masonry / concrete': 46,
+}
+
+const lookupRisk = (lookup: Record<string, number>, value: string, fallback: Record<string, number>, defaultScore = 50) => {
+  const trimmed = value.trim()
+  if (trimmed in lookup) return lookup[trimmed]
+  if (trimmed in fallback) return fallback[trimmed]
+
+  const normalized = trimmed.toLowerCase()
+  const lookupMatch = Object.entries(lookup).find(([key]) => key.trim().toLowerCase() === normalized)
+  if (lookupMatch) return lookupMatch[1]
+
+  const fallbackMatch = Object.entries(fallback).find(([key]) => key.trim().toLowerCase() === normalized)
+  if (fallbackMatch) return fallbackMatch[1]
+
+  return defaultScore
+}
+
+const slopeRisk = (slope: number) => {
+  if (slope <= 5) return 12
+  if (slope <= 15) return 12 + (slope - 5) * 3.8
+  if (slope <= 25) return 50 + (slope - 15) * 5
+  return 100
+}
+
+const fallbackBurnContextRisk = (burnContext: string) => {
+  const normalized = burnContext.trim().toLowerCase()
+  if (
+    normalized.includes('no burn') ||
+    normalized.includes('no overlap') ||
+    normalized.includes('outside')
+  ) {
+    return 0
+  }
+  if (
+    normalized.includes('inside') ||
+    normalized.includes('overlap') ||
+    normalized.includes('planned') ||
+    normalized.includes('proposed')
+  ) {
+    return 100
+  }
+  return 50
+}
+
+const getVulnerabilityLevel = (score: number): AddSiteFormData['vulnerability_level'] => {
+  if (score >= 64.2) return 'High'
+  if (score >= 48.3) return 'Medium'
+  return 'Low'
+}
+
 const validate = (data: AddSiteFormData): Errors => {
   const errors: Errors = {}
 
@@ -67,7 +150,6 @@ const validate = (data: AddSiteFormData): Errors => {
   if (data.heritage_kind === '') errors.heritage_kind = 'Heritage kind is required.'
   if (isBlank(data.fuel_type)) errors.fuel_type = 'Fuel type is required.'
   if (isBlank(data.burn_context)) errors.burn_context = 'Burn context is required.'
-  if (data.vulnerability_level === '') errors.vulnerability_level = 'Vulnerability level is required.'
   if (isBlank(data.added_by_user_name)) errors.added_by_user_name = 'Your name is required.'
 
   if (!isFiniteNumber(data.slope)) {
@@ -75,13 +157,6 @@ const validate = (data: AddSiteFormData): Errors => {
   } else {
     const slope = Number(data.slope)
     if (slope < 0 || slope > 90) errors.slope = 'Slope must be between 0 and 90 degrees.'
-  }
-
-  if (!isFiniteNumber(data.vulnerability_score)) {
-    errors.vulnerability_score = 'Vulnerability score must be a number.'
-  } else {
-    const score = Number(data.vulnerability_score)
-    if (score < 0 || score > 100) errors.vulnerability_score = 'Vulnerability score must be between 0 and 100.'
   }
 
   if (!isFiniteNumber(data.longitude)) {
@@ -114,6 +189,9 @@ const AddSiteModal = ({
   heritageTypeOptions,
   fuelTypeOptions,
   burnContextOptions,
+  heritageTypeRiskLookup,
+  fuelRiskLookup,
+  burnContextRiskLookup,
 }: AddSiteModalProps) => {
   const [formData, setFormData] = useState<AddSiteFormData>(EMPTY_FORM)
   const [errors, setErrors] = useState<Errors>({})
@@ -128,6 +206,47 @@ const AddSiteModal = ({
       setSubmitting(false)
     }
   }, [open])
+
+  const calculatedRisk = useMemo(() => {
+    if (
+      isBlank(formData.heritage_type) ||
+      isBlank(formData.fuel_type) ||
+      isBlank(formData.burn_context) ||
+      !isFiniteNumber(formData.slope)
+    ) {
+      return null
+    }
+
+    const fuelScore = lookupRisk(fuelRiskLookup, formData.fuel_type, FUEL_TYPE_SCORE)
+    const heritageScore = lookupRisk(heritageTypeRiskLookup, formData.heritage_type, HERITAGE_TYPE_SCORE)
+    const burnScore = lookupRisk(
+      burnContextRiskLookup,
+      formData.burn_context,
+      {},
+      fallbackBurnContextRisk(formData.burn_context)
+    )
+    const slopeScore = slopeRisk(Number(formData.slope))
+
+    const score = Math.round(
+      fuelScore * 0.45 +
+      slopeScore * 0.25 +
+      heritageScore * 0.25 +
+      burnScore * 0.05
+    )
+
+    return {
+      score,
+      level: getVulnerabilityLevel(score),
+    }
+  }, [
+    formData.heritage_type,
+    formData.fuel_type,
+    formData.burn_context,
+    formData.slope,
+    heritageTypeRiskLookup,
+    fuelRiskLookup,
+    burnContextRiskLookup,
+  ])
 
   if (!open) return null
 
@@ -157,6 +276,10 @@ const AddSiteModal = ({
       setErrors(validationErrors)
       return
     }
+    if (!calculatedRisk) {
+      setSubmitError('Please complete the risk fields before submitting.')
+      return
+    }
 
     setSubmitting(true)
     try {
@@ -171,7 +294,8 @@ const AddSiteModal = ({
           slope: Number(formData.slope),
           longitude: Number(formData.longitude),
           latitude: Number(formData.latitude),
-          vulnerability_score: Number(formData.vulnerability_score),
+          vulnerability_score: calculatedRisk.score,
+          vulnerability_level: calculatedRisk.level,
         }),
       })
       const result = await response.json()
@@ -352,30 +476,21 @@ const AddSiteModal = ({
               <input
                 id="vulnerability_score"
                 type="number"
-                step="any"
-                min={0}
-                max={100}
-                value={formData.vulnerability_score}
-                onChange={(e) => handleChange('vulnerability_score', e.target.value)}
-                className={fieldInputClass}
+                value={calculatedRisk?.score ?? ''}
+                readOnly
+                className={`${fieldInputClass} bg-gray-50 cursor-not-allowed`}
               />
-              {errors.vulnerability_score && <p className={fieldErrorClass}>{errors.vulnerability_score}</p>}
             </div>
 
             <div>
               <label className={fieldLabelClass} htmlFor="vulnerability_level">Vulnerability level *</label>
-              <select
+              <input
                 id="vulnerability_level"
-                value={formData.vulnerability_level}
-                onChange={(e) => handleChange('vulnerability_level', e.target.value as AddSiteFormData['vulnerability_level'])}
-                className={fieldInputClass}
-              >
-                <option value="">Select…</option>
-                <option value="High">High</option>
-                <option value="Medium">Medium</option>
-                <option value="Low">Low</option>
-              </select>
-              {errors.vulnerability_level && <p className={fieldErrorClass}>{errors.vulnerability_level}</p>}
+                type="text"
+                value={calculatedRisk?.level ?? ''}
+                readOnly
+                className={`${fieldInputClass} bg-gray-50 cursor-not-allowed`}
+              />
             </div>
           </div>
 

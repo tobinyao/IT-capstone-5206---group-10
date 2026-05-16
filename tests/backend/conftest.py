@@ -182,3 +182,18 @@ def seeded_backend_db(monkeypatch, tmp_path):
         "identifier_id": identifier_id,
         "processed_metadata": processed_metadata,
     }
+
+
+@pytest.fixture()
+def seeded_backend_db_no_metadata(seeded_backend_db):
+    """Provide a seeded DB without processed metadata for 404 tests."""
+
+    db_path = seeded_backend_db["db_path"]
+    with sqlite3.connect(db_path) as connection:
+        connection.execute(
+            "DELETE FROM app_metadata WHERE key = ?",
+            ("processed_metadata",),
+        )
+        connection.commit()
+
+    return seeded_backend_db

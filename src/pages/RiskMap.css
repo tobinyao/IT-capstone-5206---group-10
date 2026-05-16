@@ -49,6 +49,7 @@
 
 .firewatch-brand__lede,
 .firewatch-details__intro,
+.firewatch-method__intro,
 .firewatch-method__note {
   color: #62676c;
   line-height: 1.45;
@@ -89,6 +90,33 @@
   padding: 14px;
 }
 
+.firewatch-help {
+  gap: 12px;
+}
+
+.firewatch-help__list {
+  display: grid;
+  gap: 10px;
+}
+
+.firewatch-help__item {
+  display: grid;
+  gap: 3px;
+  padding-left: 10px;
+  border-left: 3px solid #297a8c;
+}
+
+.firewatch-help__item strong {
+  color: #202124;
+  font-size: 13px;
+}
+
+.firewatch-help__item span {
+  color: #62676c;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
 .firewatch-risk-page h2 {
   margin-bottom: 0;
   font-size: 16px;
@@ -106,8 +134,8 @@
 
 .firewatch-key-group {
   display: grid;
-  gap: 6px;
-  padding-top: 10px;
+  gap: 8px;
+  padding-top: 12px;
   border-top: 1px solid #ecece7;
 }
 
@@ -117,7 +145,7 @@
 }
 
 .firewatch-key-group h3 {
-  margin: 0;
+  margin: 0 0 2px;
   color: #202124;
   font-size: 13px;
 }
@@ -125,10 +153,10 @@
 .firewatch-key-group div {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 9px;
   color: #62676c;
   font-size: 12px;
-  line-height: 1.3;
+  line-height: 1.35;
 }
 
 .firewatch-key-box,
@@ -265,6 +293,29 @@
   gap: 10px;
 }
 
+.firewatch-details__heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.firewatch-details__heading h2 {
+  margin: 0;
+}
+
+.firewatch-details__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  background: #e7f2f4;
+  color: #297a8c;
+  font-size: 12px;
+  font-weight: 800;
+}
+
 .firewatch-metric-list {
   display: grid;
   gap: 10px;
@@ -392,4 +443,25 @@
   color: #6b7280;
   font-size: 0.78rem;
   line-height: 1.35;
+}
+
+.firewatch-method__formula {
+  display: grid;
+  gap: 4px;
+}
+
+.firewatch-method__formula strong {
+  color: #202124;
+  font-size: 14px;
+}
+
+.firewatch-method__formula span {
+  color: #4f555b;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.firewatch-method__intro,
+.firewatch-method__note {
+  margin: 0;
 }
