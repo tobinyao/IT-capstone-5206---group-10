@@ -114,9 +114,9 @@ const defaultLayerVisibility: ToggleState = {
 }
 
 const defaultDetails: DetailState = {
-  title: 'Select a heritage place',
+  title: 'Select a map feature',
   intro:
-    'Drag to pan, scroll to zoom, and click a heritage place, burn option, or geology area to inspect source attributes.',
+    'Drag or zoom the map to explore the study area. Click a heritage place, burn option, or geology area to view its details here.',
   metrics: [],
 }
 
@@ -853,11 +853,13 @@ function RiskMap() {
           </div>
         </section>
 
-        <section className="firewatch-card firewatch-details" aria-live="polite">
-          <h2>{details.title}</h2>
-          <p className="firewatch-details__intro">{details.intro}</p>
-          <dl className="firewatch-metric-list">
-            {details.metrics.map((metric) => (
+<section className="firewatch-card firewatch-details" aria-live="polite">
+  <div className="firewatch-details__heading">
+    <span className="firewatch-details__icon" aria-hidden="true">i</span>
+    <h2>{details.title}</h2>
+  </div>
+  <p className="firewatch-details__intro">{details.intro}</p>
+  <dl className="firewatch-metric-list">            {details.metrics.map((metric) => (
               <div key={metric.label} className="firewatch-metric">
                 <dt>{metric.label}</dt>
                 <dd>{metric.value}</dd>
@@ -866,18 +868,26 @@ function RiskMap() {
           </dl>
         </section>
 
-        <section className="firewatch-card firewatch-method">
-          <h2>Score Method</h2>
-          <p>
-            <strong>Heritage score =</strong> fuel 45% + slope 25% + heritage type/material 25% + burn context 5%.
-          </p>
-          <p>
-            <strong>Area score =</strong> fuel 55% + slope 35% + granite influence 10%.
-          </p>
-          <p className="firewatch-method__note">
-            Unknown slope no longer produces High heritage risk; it is capped pending review.
-          </p>
-        </section>
+<section className="firewatch-card firewatch-method">
+  <h2>Score Method</h2>
+  <p className="firewatch-method__intro">
+    These weightings explain how vulnerability scores are calculated for heritage places and surrounding areas.
+  </p>
+
+  <div className="firewatch-method__formula">
+    <strong>Heritage score</strong>
+    <span>Fuel 45% + slope 25% + heritage type/material 25% + burn context 5%.</span>
+  </div>
+
+  <div className="firewatch-method__formula">
+    <strong>Area score</strong>
+    <span>Fuel 55% + slope 35% + granite influence 10%.</span>
+  </div>
+
+  <p className="firewatch-method__note">
+    Unknown slope is capped pending review and does not automatically produce High heritage risk.
+  </p>
+</section>
       </aside>
 
       <section className="firewatch-map-wrap" aria-label="Interactive map">
