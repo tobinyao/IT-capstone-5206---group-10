@@ -134,8 +134,8 @@
 
 .firewatch-key-group {
   display: grid;
-  gap: 6px;
-  padding-top: 10px;
+  gap: 8px;
+  padding-top: 12px;
   border-top: 1px solid #ecece7;
 }
 
@@ -145,7 +145,7 @@
 }
 
 .firewatch-key-group h3 {
-  margin: 0;
+  margin: 0 0 2px;
   color: #202124;
   font-size: 13px;
 }
@@ -153,10 +153,10 @@
 .firewatch-key-group div {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 9px;
   color: #62676c;
   font-size: 12px;
-  line-height: 1.3;
+  line-height: 1.35;
 }
 
 .firewatch-key-box,
