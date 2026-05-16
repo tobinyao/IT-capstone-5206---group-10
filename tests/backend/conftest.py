@@ -45,6 +45,7 @@ def seeded_backend_db(monkeypatch, tmp_path):
     )
 
     site_id = "site-1"
+    identifier_id = "heritage-identifier-1"
     geometry = {"type": "Point", "coordinates": [151.0, -33.0]}
     properties = {"identifier": site_id, "name": "Test Site"}
     connection.execute(
@@ -85,6 +86,50 @@ def seeded_backend_db(monkeypatch, tmp_path):
             25.0,
             "Low",
             "2026-01-01",
+            1,
+        ),
+    )
+
+    second_geometry = {"type": "Point", "coordinates": [150.5, -33.5]}
+    second_properties = {"identifier": identifier_id, "name": "Identifier Site"}
+    connection.execute(
+        """
+        INSERT INTO heritage_sites (
+            id,
+            identifier,
+            name,
+            source,
+            data_source,
+            geometry_json,
+            properties_json,
+            latitude,
+            longitude,
+            heritage_type,
+            fuel_class,
+            slope_degrees,
+            vulnerability_score,
+            vulnerability_level,
+            assessed_date,
+            created_by
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            "site-2",
+            identifier_id,
+            "Identifier Heritage Site",
+            "register",
+            "DPLH_099",
+            json.dumps(second_geometry, separators=(",", ":")),
+            json.dumps(second_properties, separators=(",", ":")),
+            -33.5,
+            150.5,
+            "Historic",
+            "Forest",
+            12.0,
+            30.0,
+            "Medium",
+            "2026-01-02",
             1,
         ),
     )
@@ -134,6 +179,7 @@ def seeded_backend_db(monkeypatch, tmp_path):
     return {
         "db_path": db_path,
         "site_id": site_id,
+        "identifier_id": identifier_id,
         "processed_metadata": processed_metadata,
     }
 
