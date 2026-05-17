@@ -1,9 +1,40 @@
 import { Link } from 'react-router-dom'
 
+// Extra organisation that a person is also affiliated with (e.g. WKSN
+// for Sean). Rendered as a small logo + name block at the bottom of a
+// person card.
+type ExtraAffiliation = {
+  label: string
+  orgName: string
+  logoUrl: string
+  logoAlt: string
+}
+
+// A contact representing an individual person (e.g. a UWA researcher).
+// The `kind` field is the discriminator for the ContactEntry union;
+// additional kinds (e.g. an organisation contact such as DBCA) will be
+// introduced in a later change.
+type PersonContact = {
+  kind: 'person'
+  name: string
+  title: string
+  projectRole: string
+  academicRole: string
+  email: string
+  extraAffiliation: ExtraAffiliation | null
+}
+
+// Discriminated union of every kind of entry that can appear on the
+// Local Contacts page. Today only `PersonContact` is a member; the
+// union is introduced now so downstream rendering can switch on
+// `entry.kind` once more kinds are added.
+type ContactEntry = PersonContact
+
 // UWA-based researchers leading the project. Data sourced from
 // issue #82 (Local Contacts).
-const contacts = [
+const contacts: ReadonlyArray<ContactEntry> = [
   {
+    kind: 'person',
     name: 'Sean Winter',
     title: 'Dr, BA PhD W.Aust.',
     projectRole: 'Client / Project Owner',
@@ -18,6 +49,7 @@ const contacts = [
     },
   },
   {
+    kind: 'person',
     name: 'Sven Ouzman',
     title: 'PhD Berkeley, SFHEA',
     projectRole: 'Client / Project Owner',
@@ -26,7 +58,7 @@ const contacts = [
     email: 'sven.ouzman@uwa.edu.au',
     extraAffiliation: null,
   },
-] as const
+]
 
 const LocalContacts = () => {
   return (
