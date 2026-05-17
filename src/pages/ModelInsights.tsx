@@ -75,6 +75,11 @@ import {
     vulnerability_score?: number | null
     vulnerability_level?: RiskLevel
     fuel_risk?: number | null
+    // Categorical fuel class (e.g. "Tall closed forest", "Open forest").
+    // Used by the Fuel Type Breakdown stacked bar chart to group heritage
+    // sites by fuel class on the y-axis. Optional because some features in
+    // /api/layers/heritage may have a missing or blank fuel_class.
+    fuel_class?: string
     slope_risk?: number | null
     heritage_type_risk?: number | null
     slope_degrees?: number | null
@@ -101,6 +106,34 @@ import {
   const BURN_CONTEXT_RISK_MAP: Record<string, number> = {
     'Inside DBCA burn option area': 30, // covered by a burn option -> lower risk
     'No burn option overlap': 70,       // no burn management -> higher risk
+  }
+
+  // Fuel class -> reference risk score (0-100). Mirrors the backend
+  // FUEL_TYPE_RISK table in backend/services/risk_normalization.py and is
+  // only used to derive a stable y-axis order for the Fuel Type Breakdown
+  // chart (highest-risk fuel class on top, lowest on bottom). Fuel classes
+  // present in the heritage features but missing from this map fall back to
+  // a score of -Infinity and sort to the bottom, so the chart still renders.
+  // TODO: expose this mapping via /api/processed-metadata so the frontend
+  // and backend cannot drift out of sync.
+  const FUEL_TYPE_RISK_SCORES: Record<string, number> = {
+    'Tall closed forest': 100,
+    'Closed forest': 96,
+    'Pine plantation': 94,
+    'Tall open forest': 92,
+    'Tall shrubland': 88,
+    'Open forest': 86,
+    'Woodland with shrubby understory': 84,
+    'Shrubland': 82,
+    'Low woodland': 67,
+    'Grassland': 62,
+    'Sedgeland': 58,
+    'Cropland': 50,
+    'Wetland': 35,
+    'Sparse grassland': 34,
+    'Built-up': 26,
+    'Bare ground': 12,
+    'Water': 5,
   }
 
   // Arithmetic mean over an array of finite numbers. Returns 0 for an empty
@@ -170,6 +203,43 @@ import {
         min: 0,
         max: 100,
         title: { display: true, text: 'Vulnerability score (0-100)' },
+      },
+    },
+  }
+
+  // Chart 5 - Fuel Type Breakdown (horizontal stacked bar).
+  // indexAxis: 'y' makes each fuel class a horizontal bar; stacking both
+  // axes turns the three High/Medium/Low datasets into a single stacked
+  // bar per fuel class (the dataset colors come from LEVEL_COLORS in the
+  // data object). interaction.mode: 'index' surfaces all three risk-level
+  // counts in the tooltip together so the reader can compare High / Medium
+  // / Low for the hovered fuel class without picking each segment one by
+  // one. Legend sits at the bottom for consistency with the doughnut and
+  // the scatter chart.
+  const fuelTypeByLevelChartOptions = {
+    indexAxis: 'y' as const,
+    responsive: true,
+    maintainAspectRatio: false,
+    interaction: {
+      mode: 'index' as const,
+      intersect: false,
+    },
+    plugins: {
+      legend: { position: 'bottom' as const },
+    },
+    scales: {
+      x: {
+        stacked: true,
+        beginAtZero: true,
+        title: { display: true, text: 'Heritage sites' },
+        ticks: {
+          // Site counts are integers; suppress fractional gridlines.
+          precision: 0,
+        },
+      },
+      y: {
+        stacked: true,
+        title: { display: true, text: 'Fuel class' },
       },
     },
   }
@@ -390,17 +460,95 @@ import {
       }
     }, [heritageFeatures])
 
+    // Chart 5 - Fuel Type Breakdown (stacked horizontal bar).
+    // Aggregates heritage features into a Record<fuel_class, Record<RiskLevel, number>>
+    // so each fuel class becomes one bar on the y-axis with three stacked
+    // segments (High / Medium / Low). Filtering mirrors the distinctOptions
+    // helper in HeritagRegistry.tsx: fuel_class values that are missing,
+    // blank after trim, or equal to the "Unknown" fallback are skipped so
+    // they do not pollute the chart with a meaningless category. Features
+    // without a recognised vulnerability_level are also skipped because
+    // they cannot be slotted into a stack segment.
+    //
+    // The y-axis order is driven by FUEL_TYPE_RISK_SCORES (descending),
+    // which keeps the highest-risk fuel class on top and gives the chart a
+    // stable order across renders even as the underlying dataset changes.
+    // Falls back to total site count as a tie-breaker, then alphabetical,
+    // so the order is fully deterministic.
+    const fuelTypeByLevelChartData = useMemo(() => {
+      if (heritageFeatures.length === 0) return null
+
+      const countsByFuelClass: Record<string, Record<RiskLevel, number>> = {}
+
+      for (const feature of heritageFeatures) {
+        const rawFuelClass = feature.properties.fuel_class
+        const level = feature.properties.vulnerability_level
+
+        // Skip features with no usable fuel class. trim() guards against
+        // whitespace-only strings; "Unknown" is the documented fallback
+        // produced upstream when the source data is missing.
+        if (typeof rawFuelClass !== 'string') continue
+        const fuelClass = rawFuelClass.trim()
+        if (fuelClass === '' || fuelClass === 'Unknown') continue
+
+        // Skip features that cannot be placed in a High/Medium/Low stack.
+        if (level !== 'High' && level !== 'Medium' && level !== 'Low') continue
+
+        if (!countsByFuelClass[fuelClass]) {
+          countsByFuelClass[fuelClass] = { High: 0, Medium: 0, Low: 0 }
+        }
+        countsByFuelClass[fuelClass][level] += 1
+      }
+
+      const fuelClasses = Object.keys(countsByFuelClass)
+      if (fuelClasses.length === 0) return null
+
+      // Sort by reference risk score (desc), then total site count (desc),
+      // then alphabetical, so the y-axis order is stable and meaningful.
+      const sortedFuelClasses = fuelClasses.sort((a, b) => {
+        const riskA = FUEL_TYPE_RISK_SCORES[a] ?? -Infinity
+        const riskB = FUEL_TYPE_RISK_SCORES[b] ?? -Infinity
+        if (riskA !== riskB) return riskB - riskA
+
+        const totalA =
+          countsByFuelClass[a].High +
+          countsByFuelClass[a].Medium +
+          countsByFuelClass[a].Low
+        const totalB =
+          countsByFuelClass[b].High +
+          countsByFuelClass[b].Medium +
+          countsByFuelClass[b].Low
+        if (totalA !== totalB) return totalB - totalA
+
+        return a.localeCompare(b)
+      })
+
+      return {
+        labels: sortedFuelClasses,
+        datasets: RISK_LEVELS.map((level) => ({
+          label: level,
+          data: sortedFuelClasses.map(
+            (fuelClass) => countsByFuelClass[fuelClass][level]
+          ),
+          backgroundColor: LEVEL_COLORS[level],
+          borderWidth: 0,
+        })),
+      }
+    }, [heritageFeatures])
+
     return (
       <div className="flex flex-col px-8 py-8 overflow-y-auto h-full gap-4" style={{ background: '#F0EDE8' }}>
 
         {/* Title */}
         <h1 className="text-3xl font-black text-center mb-2">Heritage Fire Vulnerability Model Insights</h1>
 
-        {/* Loading state: four skeleton cards in the same 2x2 grid the real
-            charts will use, so the layout does not jump when data arrives. */}
+        {/* Loading state: five skeleton cards in the same 2-column grid the
+            real charts will use, so the layout does not jump when data
+            arrives. The fifth card (Fuel Type Breakdown) sits on its own
+            row at the bottom, matching the real grid below. */}
         {loading && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {Array.from({ length: 4 }).map((_, index) => (
+            {Array.from({ length: 5 }).map((_, index) => (
               <div
                 key={index}
                 className="bg-white rounded-xl p-6 h-80 animate-pulse"
@@ -435,9 +583,11 @@ import {
           </div>
         )}
 
-        {/* Charts: 2x2 grid of cards. Each card has a fixed-height chart
-            container so Chart.js (with maintainAspectRatio: false) renders at
-            a predictable size inside the grid. */}
+        {/* Charts: 2-column grid of cards (2x2 for the original four, with
+            the Fuel Type Breakdown card landing on its own row at the
+            bottom). Each card has a fixed-height chart container so
+            Chart.js (with maintainAspectRatio: false) renders at a
+            predictable size inside the grid. */}
         {!loading && !error && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
@@ -497,6 +647,37 @@ import {
                   <Scatter
                     data={slopeVsVulnerabilityChartData}
                     options={slopeVsVulnerabilityChartOptions}
+                  />
+                )}
+              </div>
+            </div>
+
+            {/* Chart 5 - Fuel Type Breakdown (Top Model Driver).
+                Sits on its own row at the bottom of the 2-column grid.
+                The subtitle reads the Fuel weight live from the metadata
+                response so the percentage stays in sync if the backend
+                ever retunes the model weights. Falls back to a static
+                explanation if the weight is missing or non-numeric. */}
+            <div className="bg-white rounded-xl p-6">
+              <h3 className="text-lg font-bold mb-1">
+                Heritage Sites by Fuel Type and Vulnerability Level
+              </h3>
+              <p className="text-sm text-gray-500 mb-4">
+                {(() => {
+                  const fuelWeight =
+                    metadata?.score_formula.heritage_vulnerability.fuel_risk
+                  if (typeof fuelWeight === 'number' && Number.isFinite(fuelWeight)) {
+                    const fuelWeightPercent = Math.round(fuelWeight * 100)
+                    return `Fuel risk is weighted ${fuelWeightPercent}% — sites grouped by fuel class and stacked by vulnerability level.`
+                  }
+                  return 'Heritage sites grouped by fuel class and stacked by vulnerability level.'
+                })()}
+              </p>
+              <div className="h-64">
+                {fuelTypeByLevelChartData && (
+                  <Bar
+                    data={fuelTypeByLevelChartData}
+                    options={fuelTypeByLevelChartOptions}
                   />
                 )}
               </div>
