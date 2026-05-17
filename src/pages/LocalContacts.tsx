@@ -77,6 +77,83 @@ const contactSections: ReadonlyArray<ContactSection> = [
   },
 ]
 
+// Card UI for a single person contact (e.g. a UWA project owner).
+// Extracted from the page renderer so the section loop can stay focused
+// on layout, and so a second card variant (organisation) can sit
+// alongside this one in a later change without crowding the JSX.
+const PersonCard = ({ person }: { person: PersonContact }) => (
+  <article className="relative bg-white rounded-2xl shadow-sm overflow-hidden flex flex-col">
+    {/* Header colour bar */}
+    <div className="h-3 w-full bg-[#8B2020]" />
+
+    {/* Project Role badge — pinned top-right of card body */}
+    <span className="absolute top-6 right-5 text-[10px] font-black uppercase tracking-widest bg-[#8B2020] text-white px-2.5 py-1 rounded-full">
+      Project Owner
+    </span>
+
+    <div className="p-7 flex-1 flex flex-col">
+      {/* Name — h3 because the section heading above is the h2. */}
+      <h3 className="text-2xl font-black text-gray-900 pr-32">
+        {person.name}
+      </h3>
+      {/* Title / qualifications */}
+      <p className="text-sm text-gray-500 mt-1 mb-5">{person.title}</p>
+
+      {/* Project Role */}
+      <div className="mb-4">
+        <div className="text-[10px] font-bold tracking-widest text-gray-500 uppercase mb-1">
+          Project Role
+        </div>
+        <p className="text-sm font-bold text-[#8B2020]">
+          {person.projectRole}
+        </p>
+      </div>
+
+      {/* Academic Role */}
+      <div className="mb-4">
+        <div className="text-[10px] font-bold tracking-widest text-gray-500 uppercase mb-1">
+          Academic Role
+        </div>
+        <p className="text-sm text-gray-800 leading-relaxed">
+          {person.academicRole}
+        </p>
+      </div>
+
+      {/* Email */}
+      <div className="mb-4">
+        <div className="text-[10px] font-bold tracking-widest text-gray-500 uppercase mb-1">
+          Email
+        </div>
+        <a
+          href={`mailto:${person.email}`}
+          className="text-sm font-medium text-[#1565C0] hover:text-[#0D47A1] hover:underline break-all"
+        >
+          {person.email}
+        </a>
+      </div>
+
+      {/* Extra affiliation (e.g. WKSN for Sean) */}
+      {person.extraAffiliation && (
+        <div className="mt-auto pt-5 border-t border-gray-200">
+          <div className="text-[10px] font-bold tracking-widest text-gray-500 uppercase mb-2">
+            {person.extraAffiliation.label}
+          </div>
+          <div className="flex items-center gap-3 rounded-lg bg-[#F0EDE8] px-3 py-2.5">
+            <img
+              src={person.extraAffiliation.logoUrl}
+              alt={person.extraAffiliation.logoAlt}
+              className="w-10 h-10 rounded object-contain bg-white p-1 flex-shrink-0"
+            />
+            <p className="text-sm font-semibold text-gray-900 leading-tight">
+              {person.extraAffiliation.orgName}
+            </p>
+          </div>
+        </div>
+      )}
+    </div>
+  </article>
+)
+
 const LocalContacts = () => {
   return (
     <div
@@ -104,81 +181,7 @@ const LocalContacts = () => {
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {section.entries.map((person) => (
-              <article
-                key={person.email}
-                className="relative bg-white rounded-2xl shadow-sm overflow-hidden flex flex-col"
-              >
-                {/* Header colour bar */}
-                <div className="h-3 w-full bg-[#8B2020]" />
-
-                {/* Project Role badge — pinned top-right of card body */}
-                <span
-                  className="absolute top-6 right-5 text-[10px] font-black uppercase tracking-widest bg-[#8B2020] text-white px-2.5 py-1 rounded-full"
-                >
-                  Project Owner
-                </span>
-
-                <div className="p-7 flex-1 flex flex-col">
-                  {/* Name — h3 because the section heading above is the h2. */}
-                  <h3 className="text-2xl font-black text-gray-900 pr-32">
-                    {person.name}
-                  </h3>
-                  {/* Title / qualifications */}
-                  <p className="text-sm text-gray-500 mt-1 mb-5">{person.title}</p>
-
-                  {/* Project Role */}
-                  <div className="mb-4">
-                    <div className="text-[10px] font-bold tracking-widest text-gray-500 uppercase mb-1">
-                      Project Role
-                    </div>
-                    <p className="text-sm font-bold text-[#8B2020]">
-                      {person.projectRole}
-                    </p>
-                  </div>
-
-                  {/* Academic Role */}
-                  <div className="mb-4">
-                    <div className="text-[10px] font-bold tracking-widest text-gray-500 uppercase mb-1">
-                      Academic Role
-                    </div>
-                    <p className="text-sm text-gray-800 leading-relaxed">
-                      {person.academicRole}
-                    </p>
-                  </div>
-
-                  {/* Email */}
-                  <div className="mb-4">
-                    <div className="text-[10px] font-bold tracking-widest text-gray-500 uppercase mb-1">
-                      Email
-                    </div>
-                    <a
-                      href={`mailto:${person.email}`}
-                      className="text-sm font-medium text-[#1565C0] hover:text-[#0D47A1] hover:underline break-all"
-                    >
-                      {person.email}
-                    </a>
-                  </div>
-
-                  {/* Extra affiliation (e.g. WKSN for Sean) */}
-                  {person.extraAffiliation && (
-                    <div className="mt-auto pt-5 border-t border-gray-200">
-                      <div className="text-[10px] font-bold tracking-widest text-gray-500 uppercase mb-2">
-                        {person.extraAffiliation.label}
-                      </div>
-                      <div className="flex items-center gap-3 rounded-lg bg-[#F0EDE8] px-3 py-2.5">
-                        <img
-                          src={person.extraAffiliation.logoUrl}
-                          alt={person.extraAffiliation.logoAlt}
-                          className="w-10 h-10 rounded object-contain bg-white p-1 flex-shrink-0"
-                        />
-                        <p className="text-sm font-semibold text-gray-900 leading-tight">
-                          {person.extraAffiliation.orgName}
-                        </p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </article>
+              <PersonCard key={person.email} person={person} />
             ))}
           </div>
         </section>
