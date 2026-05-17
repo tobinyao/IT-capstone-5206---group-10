@@ -11,9 +11,7 @@ type ExtraAffiliation = {
 }
 
 // A contact representing an individual person (e.g. a UWA researcher).
-// The `kind` field is the discriminator for the ContactEntry union;
-// additional kinds (e.g. an organisation contact such as DBCA) will be
-// introduced in a later change.
+// The `kind` field is the discriminator for the ContactEntry union.
 type PersonContact = {
   kind: 'person'
   name: string
@@ -24,11 +22,45 @@ type PersonContact = {
   extraAffiliation: ExtraAffiliation | null
 }
 
+// A single off-site link surfaced on an organisation card (e.g. a link
+// to a department's "Today's burns" page). `description` is an optional
+// one-liner explaining why the link is relevant.
+type RelevantLink = {
+  label: string
+  url: string
+  description?: string
+}
+
+// A contact representing an institution (e.g. a government department)
+// rather than a named person. Organisation cards typically expose a
+// general enquiries phone number, a website, an online contact form,
+// and any topic-relevant links. `id` is used as the React key in the
+// renderer since organisations do not carry a personal email.
+type OrganisationContact = {
+  kind: 'organisation'
+  id: string
+  orgName: string
+  affiliation: string
+  badgeLabel: string
+  phone: {
+    number: string
+    note?: string
+  }
+  website: {
+    url: string
+    display: string
+  }
+  contactForm: {
+    url: string
+    display?: string
+  }
+  relevantLinks: ReadonlyArray<RelevantLink>
+}
+
 // Discriminated union of every kind of entry that can appear on the
-// Local Contacts page. Today only `PersonContact` is a member; the
-// union is introduced now so downstream rendering can switch on
-// `entry.kind` once more kinds are added.
-type ContactEntry = PersonContact
+// Local Contacts page. The renderer switches on `entry.kind` to pick
+// the matching card component.
+type ContactEntry = PersonContact | OrganisationContact
 
 // A visually-grouped set of contacts rendered together under a single
 // heading (e.g. "Project Team", "Government & Regulatory"). Sections
@@ -154,6 +186,119 @@ const PersonCard = ({ person }: { person: PersonContact }) => (
   </article>
 )
 
+// Card UI for an organisation contact (e.g. a government department).
+// Mirrors the visual language of PersonCard so the two card types feel
+// like siblings, but uses a green accent (instead of the project-owner
+// red) and org-specific fields so users can tell at a glance that the
+// contact is institutional rather than an individual.
+const OrganisationCard = ({ org }: { org: OrganisationContact }) => {
+  // tel: URIs should contain only digits and an optional leading `+`,
+  // so strip the human-readable spaces and brackets from the display
+  // number before using it as an href.
+  const telHref = `tel:${org.phone.number.replace(/[^\d+]/g, '')}`
+
+  return (
+    <article className="relative bg-white rounded-2xl shadow-sm overflow-hidden flex flex-col">
+      {/* Header colour bar — green to differentiate from project-owner cards. */}
+      <div className="h-3 w-full bg-[#2E7D32]" />
+
+      {/* Category badge — pinned top-right of card body */}
+      <span className="absolute top-6 right-5 text-[10px] font-black uppercase tracking-widest bg-[#2E7D32] text-white px-2.5 py-1 rounded-full">
+        {org.badgeLabel}
+      </span>
+
+      <div className="p-7 flex-1 flex flex-col">
+        {/* Organisation name — h3 because the section heading above is the h2. */}
+        <h3 className="text-2xl font-black text-gray-900 pr-32">
+          {org.orgName}
+        </h3>
+        {/* Affiliation / jurisdiction (e.g. "Government of Western Australia") */}
+        <p className="text-sm text-gray-500 mt-1 mb-5">{org.affiliation}</p>
+
+        {/* Phone */}
+        <div className="mb-4">
+          <div className="text-[10px] font-bold tracking-widest text-gray-500 uppercase mb-1">
+            Phone
+          </div>
+          <a
+            href={telHref}
+            className="text-sm font-medium text-[#1565C0] hover:text-[#0D47A1] hover:underline"
+          >
+            {org.phone.number}
+          </a>
+          {org.phone.note && (
+            <p className="text-xs text-gray-500 mt-0.5">{org.phone.note}</p>
+          )}
+        </div>
+
+        {/* Website */}
+        <div className="mb-4">
+          <div className="text-[10px] font-bold tracking-widest text-gray-500 uppercase mb-1">
+            Website
+          </div>
+          <a
+            href={org.website.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-sm font-medium text-[#1565C0] hover:text-[#0D47A1] hover:underline break-all"
+          >
+            {org.website.display} ↗
+          </a>
+        </div>
+
+        {/* Contact form — most government departments publish a web
+            form rather than a public enquiries inbox. */}
+        <div className="mb-4">
+          <div className="text-[10px] font-bold tracking-widest text-gray-500 uppercase mb-1">
+            Contact form
+          </div>
+          <a
+            href={org.contactForm.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-sm font-medium text-[#1565C0] hover:text-[#0D47A1] hover:underline break-all"
+          >
+            {org.contactForm.display ?? 'Submit an enquiry'} ↗
+          </a>
+        </div>
+
+        {/* Relevant links — pinned to the bottom of the card so the
+            block lines up visually with PersonCard's extra-affiliation
+            block. Hidden entirely when there are no links to show. */}
+        {org.relevantLinks.length > 0 && (
+          <div className="mt-auto pt-5 border-t border-gray-200">
+            <div className="text-[10px] font-bold tracking-widest text-gray-500 uppercase mb-2">
+              Relevant links
+            </div>
+            <ul className="space-y-2">
+              {org.relevantLinks.map((link) => (
+                <li
+                  key={link.url}
+                  className="rounded-lg bg-[#F0EDE8] px-3 py-2.5"
+                >
+                  <a
+                    href={link.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm font-semibold text-[#1565C0] hover:text-[#0D47A1] hover:underline"
+                  >
+                    {link.label} ↗
+                  </a>
+                  {link.description && (
+                    <p className="text-xs text-gray-600 mt-0.5">
+                      {link.description}
+                    </p>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
+    </article>
+  )
+}
+
 const LocalContacts = () => {
   return (
     <div
@@ -180,9 +325,13 @@ const LocalContacts = () => {
             {section.heading}
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {section.entries.map((person) => (
-              <PersonCard key={person.email} person={person} />
-            ))}
+            {section.entries.map((entry) =>
+              entry.kind === 'person' ? (
+                <PersonCard key={entry.email} person={entry} />
+              ) : (
+                <OrganisationCard key={entry.id} org={entry} />
+              ),
+            )}
           </div>
         </section>
       ))}
