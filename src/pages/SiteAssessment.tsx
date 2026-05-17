@@ -268,10 +268,13 @@ const SiteAssessment = () => {
                   <span className="text-sm font-bold text-gray-700">Topography (Slope)</span>
                   <span className="text-xs font-extrabold text-[#8B2020] bg-red-50 px-2 py-0.5 rounded-md">{slope}° · {slopeLevel(slope)}</span>
                 </div>
-                <input type="range" min={0} max={45} value={slope} step={1}
+                {/* Slope input spans the full physical range (0–90°). The
+                    underlying slopeRisk saturates at >=25 deg per spec, so any
+                    value above 25 deg keeps the slope risk pinned at 100. */}
+                <input type="range" min={0} max={90} value={slope} step={1}
                   onChange={(e) => setSlope(Number(e.target.value))}
                   className="w-full accent-[#8B2020] h-1 cursor-pointer" />
-                <div className="flex justify-between text-xs text-gray-300 mt-1"><span>0°</span><span>45°</span></div>
+                <div className="flex justify-between text-xs text-gray-300 mt-1"><span>0°</span><span>90°</span></div>
               </div>
 
               {/* Fuel Type */}
