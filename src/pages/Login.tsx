@@ -77,6 +77,23 @@ const Login = () => {
             and heritage practitioners in the Franklin District, Western Australia.
           </p>
 
+          {/* Acknowledgement of Country.
+              Recognises the Wagyl Kaip Noongar people as Traditional
+              Custodians of the Franklin District. Styled as a quote block
+              with a left accent bar to give it visual weight without
+              competing with the hero. */}
+          <div className="mt-8 pl-4 border-l-2 border-[#8B2020]">
+            <div className="text-[10px] font-bold tracking-widest uppercase text-gray-600 mb-2">
+              Acknowledgement of Country
+            </div>
+            <p className="text-xs italic text-gray-400 leading-relaxed">
+              We acknowledge the Wagyl Kaip Noongar people as the Traditional
+              Custodians of the Franklin District, and pay our respects to
+              Elders past and present. We recognise their enduring connection
+              to Country, culture, and community.
+            </p>
+          </div>
+
           {/* Feature bullets */}
           <div className="flex flex-col gap-3 mt-10">
             {[
