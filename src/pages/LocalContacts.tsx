@@ -72,9 +72,11 @@ type ContactSection = {
   entries: ReadonlyArray<ContactEntry>
 }
 
-// Page content, grouped into sections. Additional sections (e.g.
-// government authorities) will be added in a later change. Project
-// Team data sourced from issue #82 (Local Contacts).
+// Page content, grouped into sections. Order matters: the Project Team
+// is the primary point of contact, with Government & Regulatory shown
+// below as a secondary referral. Project Team data sourced from issue
+// #82 (Local Contacts); DBCA data sourced from the official website
+// (https://www.dbca.wa.gov.au).
 const contactSections: ReadonlyArray<ContactSection> = [
   {
     id: 'project-team',
@@ -104,6 +106,39 @@ const contactSections: ReadonlyArray<ContactSection> = [
           'Associate Professor, School of Social Sciences; School of Social Sciences, Archaeology; Centre for Rock Art Research and Management',
         email: 'sven.ouzman@uwa.edu.au',
         extraAffiliation: null,
+      },
+    ],
+  },
+  {
+    id: 'government-regulatory',
+    heading: 'Government & Regulatory',
+    entries: [
+      {
+        kind: 'organisation',
+        id: 'dbca',
+        orgName:
+          'Department of Biodiversity, Conservation and Attractions',
+        affiliation: 'Government of Western Australia',
+        badgeLabel: 'Government Agency',
+        phone: {
+          number: '(08) 9219 9000',
+          note: 'General enquiries · Mon–Fri',
+        },
+        website: {
+          url: 'https://www.dbca.wa.gov.au',
+          display: 'dbca.wa.gov.au',
+        },
+        contactForm: {
+          url: 'https://www.dbca.wa.gov.au/contact-us',
+          display: 'dbca.wa.gov.au/contact-us',
+        },
+        relevantLinks: [
+          {
+            label: "Today's burns",
+            url: 'https://www.dbca.wa.gov.au/management/fire/prescribed-burning/todays-burns',
+            description: 'Current prescribed burn program updates',
+          },
+        ],
       },
     ],
   },
@@ -324,7 +359,16 @@ const LocalContacts = () => {
           <h2 className="text-sm font-black uppercase tracking-[0.25em] text-gray-700 mb-4">
             {section.heading}
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Single-entry sections are centred and constrained so the
+              lone card does not float awkwardly in one half of an
+              otherwise empty 2-column grid. */}
+          <div
+            className={
+              section.entries.length === 1
+                ? 'grid grid-cols-1 gap-6 md:max-w-lg md:mx-auto'
+                : 'grid grid-cols-1 md:grid-cols-2 gap-6'
+            }
+          >
             {section.entries.map((entry) =>
               entry.kind === 'person' ? (
                 <PersonCard key={entry.email} person={entry} />
