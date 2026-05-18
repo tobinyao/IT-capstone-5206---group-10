@@ -42,15 +42,20 @@ const Login = () => {
     <div className="grid grid-cols-2 min-h-screen">
 
       {/* LEFT — branding.
-          Panel background lifted from #1A1A1A to #2A2A2A per client
-          feedback ("the black background makes some of the text hard
-          to read"). The shift keeps the dark, sidebar-style brand
-          feel but raises body-text contrast above the WCAG AA 4.5:1
-          threshold when paired with the lighter gray text classes
-          used below. Inner cards/borders are bumped proportionally
-          (#303030 / #3A3A3A) to preserve the subtle "elevated card"
-          relationship the sidebar uses (#202020 on #1A1A1A). */}
-      <div className="bg-[#2A2A2A] px-12 py-12 flex flex-col justify-between">
+          Panel background lifted from #1A1A1A -> #2A2A2A -> #3A3A3A
+          across two rounds of client readability feedback ("the black
+          background makes some of the text hard to read", then "still
+          not legible enough"). The dark, sidebar-aligned brand feel is
+          preserved, but the panel is now light enough that the eye
+          does not have to fight a near-black surface. Inner cards
+          (#454545) and borders (#555555) are bumped in step so the
+          "elevated card on dark panel" relationship is kept. Text
+          colours below are raised one tier in tandem (gray-300 ->
+          gray-200 for body, gray-400 -> gray-300 for eyebrow / caption
+          / footer) because lifting the panel alone would have lowered
+          contrast for any text class left unchanged. All combinations
+          clear WCAG AA 4.5:1 on the new panel. */}
+      <div className="bg-[#3A3A3A] px-12 py-12 flex flex-col justify-between">
         <div>
           {/* Brand */}
           <div className="flex items-start gap-3 mb-12">
@@ -73,7 +78,7 @@ const Login = () => {
               <div className="text-xs font-extrabold text-white uppercase tracking-widest leading-tight">
                 Heritage Fire<br />Vulnerability<br />Assessment Tool
               </div>
-              <div className="text-[11px] text-gray-400 mt-1">Franklin District · WA</div>
+              <div className="text-[11px] text-gray-300 mt-1">Franklin District · WA</div>
             </div>
           </div>
 
@@ -92,7 +97,7 @@ const Login = () => {
             <span className="text-[#8B2020]">Heritage Sites</span><br />
             from Fire Risk
           </h1>
-          <p className="text-sm text-gray-300 leading-relaxed">
+          <p className="text-sm text-gray-200 leading-relaxed">
             A web-based tool for land managers, indigenous rangers,
             and heritage practitioners in the Franklin District, Western Australia.
           </p>
@@ -103,10 +108,10 @@ const Login = () => {
               with a left accent bar to give it visual weight without
               competing with the hero. */}
           <div className="mt-8 pl-4 border-l-2 border-[#8B2020]">
-            <div className="text-[10px] font-bold tracking-widest uppercase text-gray-400 mb-2">
+            <div className="text-[10px] font-bold tracking-widest uppercase text-gray-300 mb-2">
               Acknowledgement of Country
             </div>
-            <p className="text-xs italic text-gray-300 leading-relaxed">
+            <p className="text-xs italic text-gray-200 leading-relaxed">
               We acknowledge the Wagyl Kaip Noongar people as the Traditional
               Custodians of the Franklin District, and pay our respects to
               Elders past and present. We recognise their enduring connection
@@ -123,7 +128,7 @@ const Login = () => {
             ].map((item) => (
               <div key={item} className="flex items-center gap-3">
                 <div className="w-2 h-2 rounded-full bg-[#8B2020] flex-shrink-0" />
-                <span className="text-xs text-gray-300">{item}</span>
+                <span className="text-xs text-gray-200">{item}</span>
               </div>
             ))}
           </div>
@@ -133,7 +138,7 @@ const Login = () => {
               disabled so users can read the location at a glance without
               accidentally panning/zooming. */}
           <div
-            className="mt-8 rounded-md overflow-hidden border border-[#3A3A3A]"
+            className="mt-8 rounded-md overflow-hidden border border-[#555555]"
             style={{ height: 200 }}
           >
             <MapContainer
@@ -176,11 +181,11 @@ const Login = () => {
         <div>
           {/* Project Partners */}
           <div className="mb-6">
-            <div className="text-[10px] font-bold tracking-widest uppercase text-gray-400 mb-2">
+            <div className="text-[10px] font-bold tracking-widest uppercase text-gray-300 mb-2">
               Project Partners
             </div>
             <div className="space-y-2">
-              <div className="flex items-center gap-2 rounded-md border border-[#3A3A3A] bg-[#303030] px-2 py-2">
+              <div className="flex items-center gap-2 rounded-md border border-[#555555] bg-[#454545] px-2 py-2">
                 <img
                   src="https://images.squarespace-cdn.com/content/v1/61f8e2c584741255f5ca8798/290d1715-85eb-4c72-a7e6-9c59ca2501ca/WKSNLogo.png"
                   alt="Wagyl Kaip South Noongar logo"
@@ -188,10 +193,10 @@ const Login = () => {
                 />
                 <div>
                   <div className="text-[11px] font-semibold text-white leading-tight">Wagyl Kaip</div>
-                  <div className="text-[10px] text-gray-400 leading-tight">Project Partner</div>
+                  <div className="text-[10px] text-gray-300 leading-tight">Project Partner</div>
                 </div>
               </div>
-              <div className="flex items-center gap-2 rounded-md border border-[#3A3A3A] bg-[#303030] px-2 py-2">
+              <div className="flex items-center gap-2 rounded-md border border-[#555555] bg-[#454545] px-2 py-2">
                 <img
                   src="https://www.uwa.edu.au/_assets/favicon512.png"
                   alt="University of Western Australia logo"
@@ -199,7 +204,7 @@ const Login = () => {
                 />
                 <div>
                   <div className="text-[11px] font-semibold text-white leading-tight">University of Western Australia</div>
-                  <div className="text-[10px] text-gray-400 leading-tight">Project Partner</div>
+                  <div className="text-[10px] text-gray-300 leading-tight">Project Partner</div>
                 </div>
               </div>
             </div>
@@ -210,17 +215,19 @@ const Login = () => {
               the tool follows, and the conditions of use. Logos are not
               repeated here because they already appear in the Project
               Partners cards above. */}
-          <div className="text-[11px] text-gray-300 leading-relaxed mb-4">
+          <div className="text-[11px] text-gray-200 leading-relaxed mb-4">
             <p>Developed with Wagyl Kaip and The University of Western Australia.</p>
             <p>This tool respects ICIP and IDaS principles.</p>
             <p>For authorised research/project use only. Do not misuse, redistribute, or expose sensitive heritage data.</p>
           </div>
 
-          <div className="text-xs text-gray-400">
+          <div className="text-xs text-gray-300">
             {/* Footer copyright line — keep brand string in sync with sidebar/title.
-                Colour bumped from text-gray-700 to text-gray-400 so the line
-                still reads as "footer fine print" but actually clears WCAG AA
-                on the new #2A2A2A panel background. */}
+                Colour bumped from text-gray-700 -> text-gray-400 -> text-gray-300
+                across the readability rework. Still reads as "footer fine print"
+                because the surrounding body text is now text-gray-200, but the
+                absolute luminance is high enough to be legible on the lifted
+                #3A3A3A panel. */}
             © 2026 Heritage Fire Vulnerability Assessment Tool · Franklin District
           </div>
         </div>
