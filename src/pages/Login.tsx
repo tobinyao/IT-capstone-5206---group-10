@@ -77,10 +77,19 @@ const Login = () => {
             </div>
           </div>
 
-          {/* Hero */}
+          {/* Hero.
+              Broadened from "Aboriginal Heritage" to "Heritage Sites"
+              per client feedback ("it is not just Aboriginal heritage —
+              it is ALL heritage"). The tool ingests Aboriginal,
+              non-Aboriginal, and state-listed heritage places (see the
+              Heritage Registry and Risk Map filters), so the hero now
+              describes the actual scope. The Acknowledgement of Country
+              block below is intentionally unchanged — it is a cultural
+              recognition of the Wagyl Kaip Noongar Traditional
+              Custodians and is separate from the tool's data scope. */}
           <h1 className="text-4xl font-black text-white leading-tight tracking-tight mb-4">
             Protecting<br />
-            <span className="text-[#8B2020]">Aboriginal Heritage</span><br />
+            <span className="text-[#8B2020]">Heritage Sites</span><br />
             from Fire Risk
           </h1>
           <p className="text-sm text-gray-300 leading-relaxed">
