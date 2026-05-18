@@ -73,7 +73,7 @@ const Login = () => {
               <div className="text-xs font-extrabold text-white uppercase tracking-widest leading-tight">
                 Heritage Fire<br />Vulnerability<br />Assessment Tool
               </div>
-              <div className="text-[11px] text-gray-300 mt-1">Franklin District · WA</div>
+              <div className="text-[11px] text-gray-400 mt-1">Franklin District · WA</div>
             </div>
           </div>
 
@@ -94,7 +94,7 @@ const Login = () => {
               with a left accent bar to give it visual weight without
               competing with the hero. */}
           <div className="mt-8 pl-4 border-l-2 border-[#8B2020]">
-            <div className="text-[10px] font-bold tracking-widest uppercase text-gray-300 mb-2">
+            <div className="text-[10px] font-bold tracking-widest uppercase text-gray-400 mb-2">
               Acknowledgement of Country
             </div>
             <p className="text-xs italic text-gray-300 leading-relaxed">
@@ -167,7 +167,7 @@ const Login = () => {
         <div>
           {/* Project Partners */}
           <div className="mb-6">
-            <div className="text-[10px] font-bold tracking-widest uppercase text-gray-300 mb-2">
+            <div className="text-[10px] font-bold tracking-widest uppercase text-gray-400 mb-2">
               Project Partners
             </div>
             <div className="space-y-2">
@@ -179,7 +179,7 @@ const Login = () => {
                 />
                 <div>
                   <div className="text-[11px] font-semibold text-white leading-tight">Wagyl Kaip</div>
-                  <div className="text-[10px] text-gray-300 leading-tight">Project Partner</div>
+                  <div className="text-[10px] text-gray-400 leading-tight">Project Partner</div>
                 </div>
               </div>
               <div className="flex items-center gap-2 rounded-md border border-[#3A3A3A] bg-[#303030] px-2 py-2">
@@ -190,7 +190,7 @@ const Login = () => {
                 />
                 <div>
                   <div className="text-[11px] font-semibold text-white leading-tight">University of Western Australia</div>
-                  <div className="text-[10px] text-gray-300 leading-tight">Project Partner</div>
+                  <div className="text-[10px] text-gray-400 leading-tight">Project Partner</div>
                 </div>
               </div>
             </div>
