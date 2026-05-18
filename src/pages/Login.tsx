@@ -59,8 +59,11 @@ const Login = () => {
               </svg>
             </div>
             <div>
+              {/* Brand wordmark on the login hero panel. "Heritage"
+                  was added per client feedback to align with the
+                  sidebar branding across the app. */}
               <div className="text-xs font-extrabold text-white uppercase tracking-widest leading-tight">
-                Fire Vulnerability<br />Assessment Tool
+                Heritage Fire<br />Vulnerability<br />Assessment Tool
               </div>
               <div className="text-[11px] text-gray-500 mt-1">Franklin District · WA</div>
             </div>
@@ -197,7 +200,8 @@ const Login = () => {
           </div>
 
           <div className="text-xs text-gray-700">
-            © 2026 Fire Vulnerability Assessment Tool · Franklin District
+            {/* Footer copyright line — keep brand string in sync with sidebar/title. */}
+            © 2026 Heritage Fire Vulnerability Assessment Tool · Franklin District
           </div>
         </div>
       </div>

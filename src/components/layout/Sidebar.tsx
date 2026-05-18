@@ -75,8 +75,10 @@ const Sidebar = () => {
             </svg>
           </div>
           <div>
+            {/* Sidebar brand: client feedback asked us to prefix the
+                product name with "Heritage" so the scope is clearer. */}
             <div className="text-xs font-extrabold tracking-widest uppercase leading-tight">
-              Fire Vulnerability<br />Assessment Tool
+              Heritage Fire<br />Vulnerability<br />Assessment Tool
             </div>
             <div className="text-[11px] text-gray-500 mt-1">Franklin District · WA</div>
           </div>
