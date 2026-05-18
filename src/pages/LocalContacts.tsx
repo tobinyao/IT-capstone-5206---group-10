@@ -115,15 +115,22 @@ const contactSections: ReadonlyArray<ContactSection> = [
     entries: [
       // DBCA Albany office — Parks and Wildlife Service, South Coast
       // Region. Added per client feedback ("Contact should have DBCA
-      // Albany"). Listed before the Perth headquarters because this
+      // Albany"). This is the only DBCA contact surfaced because the
       // tool is Franklin-District-specific and the South Coast Region
       // is the team that actually runs prescribed burns and on-ground
-      // conservation across Albany / Mt Barker / Denmark. Users calling
-      // about heritage fire context reach the right people faster by
-      // going through Albany first. Contact details verified via the
-      // public Google Maps listing for "DBCA's Parks and Wildlife
-      // Service – South Coast Region", 120 Albany Hwy, Centennial Park
-      // WA 6330.
+      // conservation across Albany / Mt Barker / Denmark — users with
+      // a heritage-fire question reach the right people fastest by
+      // calling Albany directly. The Perth headquarters entry was
+      // removed in the same change to avoid two near-identical DBCA
+      // cards (same website, contact form, and "Today's burns" link
+      // as Albany, differing only by a general-enquiries phone number
+      // that just routes back out to regional offices). Users who do
+      // need to reach Perth HQ for policy / complaints can still find
+      // it from dbca.wa.gov.au below.
+      //
+      // Contact details verified via the public Google Maps listing
+      // for "DBCA's Parks and Wildlife Service – South Coast Region",
+      // 120 Albany Hwy, Centennial Park WA 6330.
       {
         kind: 'organisation',
         id: 'dbca-albany',
@@ -134,33 +141,6 @@ const contactSections: ReadonlyArray<ContactSection> = [
         phone: {
           number: '(08) 9842 4500',
           note: 'Albany office · Mon–Fri',
-        },
-        website: {
-          url: 'https://www.dbca.wa.gov.au',
-          display: 'dbca.wa.gov.au',
-        },
-        contactForm: {
-          url: 'https://www.dbca.wa.gov.au/contact-us',
-          display: 'dbca.wa.gov.au/contact-us',
-        },
-        relevantLinks: [
-          {
-            label: "Today's burns",
-            url: 'https://www.dbca.wa.gov.au/management/fire/prescribed-burning/todays-burns',
-            description: 'Current prescribed burn program updates',
-          },
-        ],
-      },
-      {
-        kind: 'organisation',
-        id: 'dbca',
-        orgName:
-          'Department of Biodiversity, Conservation and Attractions',
-        affiliation: 'Government of Western Australia',
-        badgeLabel: 'Government Agency',
-        phone: {
-          number: '(08) 9219 9000',
-          note: 'General enquiries · Mon–Fri',
         },
         website: {
           url: 'https://www.dbca.wa.gov.au',
