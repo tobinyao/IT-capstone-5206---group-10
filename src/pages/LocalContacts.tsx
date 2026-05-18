@@ -113,6 +113,44 @@ const contactSections: ReadonlyArray<ContactSection> = [
     id: 'government-regulatory',
     heading: 'Government & Regulatory',
     entries: [
+      // DBCA Albany office — Parks and Wildlife Service, South Coast
+      // Region. Added per client feedback ("Contact should have DBCA
+      // Albany"). Listed before the Perth headquarters because this
+      // tool is Franklin-District-specific and the South Coast Region
+      // is the team that actually runs prescribed burns and on-ground
+      // conservation across Albany / Mt Barker / Denmark. Users calling
+      // about heritage fire context reach the right people faster by
+      // going through Albany first. Contact details verified via the
+      // public Google Maps listing for "DBCA's Parks and Wildlife
+      // Service – South Coast Region", 120 Albany Hwy, Centennial Park
+      // WA 6330.
+      {
+        kind: 'organisation',
+        id: 'dbca-albany',
+        orgName:
+          "DBCA's Parks and Wildlife Service – South Coast Region",
+        affiliation: 'Government of Western Australia · Albany',
+        badgeLabel: 'Parks & Wildlife · Albany',
+        phone: {
+          number: '(08) 9842 4500',
+          note: 'Albany office · Mon–Fri',
+        },
+        website: {
+          url: 'https://www.dbca.wa.gov.au',
+          display: 'dbca.wa.gov.au',
+        },
+        contactForm: {
+          url: 'https://www.dbca.wa.gov.au/contact-us',
+          display: 'dbca.wa.gov.au/contact-us',
+        },
+        relevantLinks: [
+          {
+            label: "Today's burns",
+            url: 'https://www.dbca.wa.gov.au/management/fire/prescribed-burning/todays-burns',
+            description: 'Current prescribed burn program updates',
+          },
+        ],
+      },
       {
         kind: 'organisation',
         id: 'dbca',
