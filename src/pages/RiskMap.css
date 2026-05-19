@@ -465,3 +465,32 @@
 .firewatch-method__note {
   margin: 0;
 }
+
+.firewatch-popup {
+  min-width: 210px;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.firewatch-popup strong {
+  display: block;
+  margin-bottom: 3px;
+  font-size: 14px;
+  color: #202124;
+}
+
+.firewatch-popup__details {
+  margin-top: 8px;
+  padding-top: 7px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.firewatch-popup__details div {
+  margin-bottom: 4px;
+  color: #333;
+}
+
+.firewatch-popup__details span {
+  font-weight: 700;
+  color: #555;
+}

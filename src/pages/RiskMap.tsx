@@ -135,6 +135,27 @@ function formatValue(value: unknown, fallback = 'Unknown') {
   return String(value)
 }
 
+function formatSlope(value?: number | null) {
+  return typeof value === 'number' ? `${value.toFixed(2)} deg` : 'Unknown'
+}
+
+function buildHeritagePopup(properties: HeritageProperties) {
+  return `
+    <div class="firewatch-popup">
+      <strong>${formatValue(properties.name, 'Heritage place')}</strong>
+      <div>${formatValue(properties.heritage_kind, 'Heritage')} heritage</div>
+
+      <div class="firewatch-popup__details">
+        <div><span>Name:</span> ${formatValue(properties.name)}</div>
+        <div><span>Region / LGA:</span> ${formatValue(properties.region)}</div>
+        <div><span>Slope:</span> ${formatSlope(properties.slope_degrees)}</div>
+        <div><span>Risk level:</span> ${formatValue(properties.vulnerability_level)}</div>
+        <div><span>Score:</span> ${formatValue(properties.vulnerability_score)}/100</div>
+      </div>
+    </div>
+  `
+}
+
 function loadExternalStylesheet(id: string, href: string) {
   if (document.getElementById(id)) return
 
@@ -513,12 +534,7 @@ function RiskMap() {
         onEachFeature: (feature: GeoFeature, layer: any) => {
           const properties = feature.properties as HeritageProperties
           layer.on('click', () => setHeritageDetails(properties))
-          layer.bindPopup(
-            `<strong>${formatValue(properties.name, 'Heritage place')}</strong><br>${formatValue(
-              properties.heritage_kind,
-              'Heritage'
-            )} heritage`
-          )
+          layer.bindPopup(buildHeritagePopup(properties))
         },
         pane: 'heritagePane',
       }
@@ -541,12 +557,7 @@ function RiskMap() {
           })
 
           marker.on('click', () => setHeritageDetails(properties))
-          marker.bindPopup(
-            `<strong>${formatValue(properties.name, 'Heritage place')}</strong><br>${formatValue(
-              properties.heritage_kind,
-              'Heritage'
-            )} heritage`
-          )
+          marker.bindPopup(buildHeritagePopup(properties))
           return marker
         })
         .filter(Boolean)

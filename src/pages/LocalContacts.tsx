@@ -186,7 +186,7 @@ const contactSections: ReadonlyArray<ContactSection> = [
       // 120 Albany Hwy, Centennial Park WA 6330.
       {
         kind: 'organisation',
-        id: 'dbca-albany',
+        id: 'dbca',
         orgName:
           "DBCA's Parks and Wildlife Service – South Coast Region",
         affiliation: 'Government of Western Australia · Albany',
@@ -218,8 +218,8 @@ const contactSections: ReadonlyArray<ContactSection> = [
           coverageColor: '#2E7D32',
         },
         phone: {
-          number: '(08) 9842 4500',
-          note: 'Albany office · Mon–Fri',
+          number: '(08) 9219 9000',
+          note: 'General enquiries · Mon–Fri',
         },
         website: {
           url: 'https://www.dbca.wa.gov.au',
