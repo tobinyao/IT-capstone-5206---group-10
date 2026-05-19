@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 
 // Extra organisation that a person is also affiliated with (e.g. WKSN
@@ -36,12 +37,19 @@ type RelevantLink = {
 // general enquiries phone number, a website, an online contact form,
 // and any topic-relevant links. `id` is used as the React key in the
 // renderer since organisations do not carry a personal email.
+// `address` is optional because not every organisation card needs to
+// surface a physical office — when present, it renders as a "View on
+// map" line in the card with `mapUrl` pointing at Google Maps.
 type OrganisationContact = {
   kind: 'organisation'
   id: string
   orgName: string
   affiliation: string
   badgeLabel: string
+  address?: {
+    line: string
+    mapUrl: string
+  }
   phone: {
     number: string
     note?: string
@@ -138,6 +146,15 @@ const contactSections: ReadonlyArray<ContactSection> = [
           "DBCA's Parks and Wildlife Service – South Coast Region",
         affiliation: 'Government of Western Australia · Albany',
         badgeLabel: 'Parks & Wildlife · Albany',
+        address: {
+          line: '120 Albany Hwy, Centennial Park WA 6330',
+          // Google Maps "search by address" deep link — works on web,
+          // iOS, and Android, and falls back to the browser if no map
+          // app is installed. Address is URL-encoded inline so the
+          // string stays readable at the call site.
+          mapUrl:
+            'https://www.google.com/maps/search/?api=1&query=120+Albany+Hwy%2C+Centennial+Park+WA+6330',
+        },
         phone: {
           number: '(08) 9842 4500',
           note: 'Albany office · Mon–Fri',
@@ -162,12 +179,95 @@ const contactSections: ReadonlyArray<ContactSection> = [
   },
 ]
 
+// Small helper for the eyebrow label of each card section. Renders a
+// tiny accent-coloured icon (passed in as children, e.g. a <path> set)
+// next to the uppercase label text. Extracted so both card variants
+// (PersonCard / OrganisationCard) share the same icon-on-the-left
+// visual treatment without copy/paste, and so swapping the icon set
+// is a one-line change at the call site.
+const FieldLabel = ({
+  icon,
+  accentClass,
+  children,
+}: {
+  icon: ReactNode
+  accentClass: string
+  children: ReactNode
+}) => (
+  <div className="flex items-center gap-1.5 mb-1">
+    <svg
+      className={`w-3 h-3 ${accentClass}`}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      {icon}
+    </svg>
+    <span className="text-[10px] font-bold tracking-widest text-gray-500 uppercase">
+      {children}
+    </span>
+  </div>
+)
+
+// Lucide-style stroked icon paths used by FieldLabel. Inlined as JSX
+// fragments rather than separate components so the SVG stroke
+// attributes stay defined in one place (FieldLabel above).
+const ICONS = {
+  mapPin: (
+    <>
+      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+      <circle cx="12" cy="10" r="3" />
+    </>
+  ),
+  phone: (
+    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+  ),
+  globe: (
+    <>
+      <circle cx="12" cy="12" r="10" />
+      <line x1="2" y1="12" x2="22" y2="12" />
+      <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+    </>
+  ),
+  mail: (
+    <>
+      <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+      <polyline points="22,6 12,13 2,6" />
+    </>
+  ),
+  link: (
+    <>
+      <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+      <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+    </>
+  ),
+  briefcase: (
+    <>
+      <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
+      <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+    </>
+  ),
+  book: (
+    <>
+      <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+      <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+    </>
+  ),
+} as const
+
 // Card UI for a single person contact (e.g. a UWA project owner).
 // Extracted from the page renderer so the section loop can stay focused
 // on layout, and so a second card variant (organisation) can sit
 // alongside this one in a later change without crowding the JSX.
 const PersonCard = ({ person }: { person: PersonContact }) => (
-  <article className="relative bg-white rounded-2xl shadow-sm overflow-hidden flex flex-col">
+  // Card lifts subtly on hover to mirror OrganisationCard. Tailwind
+  // auto-enables `transform` when a translate utility is used, so we do
+  // not need an explicit `transform` class.
+  <article className="relative bg-white rounded-2xl shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 overflow-hidden flex flex-col">
     {/* Header colour bar */}
     <div className="h-3 w-full bg-[#8B2020]" />
 
@@ -186,9 +286,9 @@ const PersonCard = ({ person }: { person: PersonContact }) => (
 
       {/* Project Role */}
       <div className="mb-4">
-        <div className="text-[10px] font-bold tracking-widest text-gray-500 uppercase mb-1">
+        <FieldLabel icon={ICONS.briefcase} accentClass="text-[#8B2020]">
           Project Role
-        </div>
+        </FieldLabel>
         <p className="text-sm font-bold text-[#8B2020]">
           {person.projectRole}
         </p>
@@ -196,9 +296,9 @@ const PersonCard = ({ person }: { person: PersonContact }) => (
 
       {/* Academic Role */}
       <div className="mb-4">
-        <div className="text-[10px] font-bold tracking-widest text-gray-500 uppercase mb-1">
+        <FieldLabel icon={ICONS.book} accentClass="text-[#8B2020]">
           Academic Role
-        </div>
+        </FieldLabel>
         <p className="text-sm text-gray-800 leading-relaxed">
           {person.academicRole}
         </p>
@@ -206,9 +306,9 @@ const PersonCard = ({ person }: { person: PersonContact }) => (
 
       {/* Email */}
       <div className="mb-4">
-        <div className="text-[10px] font-bold tracking-widest text-gray-500 uppercase mb-1">
+        <FieldLabel icon={ICONS.mail} accentClass="text-[#8B2020]">
           Email
-        </div>
+        </FieldLabel>
         <a
           href={`mailto:${person.email}`}
           className="text-sm font-medium text-[#1565C0] hover:text-[#0D47A1] hover:underline break-all"
@@ -217,13 +317,16 @@ const PersonCard = ({ person }: { person: PersonContact }) => (
         </a>
       </div>
 
-      {/* Extra affiliation (e.g. WKSN for Sean) */}
+      {/* Extra affiliation (e.g. WKSN for Sean). The label here comes
+          from the data ("Also affiliated with"), so we render it via
+          FieldLabel with a generic link icon to keep visual parity
+          with the other sections. */}
       {person.extraAffiliation && (
         <div className="mt-auto pt-5 border-t border-gray-200">
-          <div className="text-[10px] font-bold tracking-widest text-gray-500 uppercase mb-2">
+          <FieldLabel icon={ICONS.link} accentClass="text-[#8B2020]">
             {person.extraAffiliation.label}
-          </div>
-          <div className="flex items-center gap-3 rounded-lg bg-[#F0EDE8] px-3 py-2.5">
+          </FieldLabel>
+          <div className="flex items-center gap-3 rounded-lg bg-[#F0EDE8] px-3 py-2.5 mt-1">
             <img
               src={person.extraAffiliation.logoUrl}
               alt={person.extraAffiliation.logoAlt}
@@ -244,6 +347,11 @@ const PersonCard = ({ person }: { person: PersonContact }) => (
 // like siblings, but uses a green accent (instead of the project-owner
 // red) and org-specific fields so users can tell at a glance that the
 // contact is institutional rather than an individual.
+//
+// The card lifts on hover (translate + shadow) to give a tactile sense
+// that the links inside are interactive. Tailwind handles the
+// `transform` utility implicitly when a `translate-*` class is used,
+// so no explicit `transform` class is needed.
 const OrganisationCard = ({ org }: { org: OrganisationContact }) => {
   // tel: URIs should contain only digits and an optional leading `+`,
   // so strip the human-readable spaces and brackets from the display
@@ -251,7 +359,7 @@ const OrganisationCard = ({ org }: { org: OrganisationContact }) => {
   const telHref = `tel:${org.phone.number.replace(/[^\d+]/g, '')}`
 
   return (
-    <article className="relative bg-white rounded-2xl shadow-sm overflow-hidden flex flex-col">
+    <article className="relative bg-white rounded-2xl shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 overflow-hidden flex flex-col">
       {/* Header colour bar — green to differentiate from project-owner cards. */}
       <div className="h-3 w-full bg-[#2E7D32]" />
 
@@ -268,11 +376,30 @@ const OrganisationCard = ({ org }: { org: OrganisationContact }) => {
         {/* Affiliation / jurisdiction (e.g. "Government of Western Australia") */}
         <p className="text-sm text-gray-500 mt-1 mb-5">{org.affiliation}</p>
 
+        {/* Address — only rendered when an organisation supplies a
+            physical office. Sits before Phone so the user's mental
+            model goes "where" then "how to reach". */}
+        {org.address && (
+          <div className="mb-4">
+            <FieldLabel icon={ICONS.mapPin} accentClass="text-[#2E7D32]">
+              Address
+            </FieldLabel>
+            <a
+              href={org.address.mapUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm font-medium text-[#1565C0] hover:text-[#0D47A1] hover:underline"
+            >
+              {org.address.line} ↗
+            </a>
+          </div>
+        )}
+
         {/* Phone */}
         <div className="mb-4">
-          <div className="text-[10px] font-bold tracking-widest text-gray-500 uppercase mb-1">
+          <FieldLabel icon={ICONS.phone} accentClass="text-[#2E7D32]">
             Phone
-          </div>
+          </FieldLabel>
           <a
             href={telHref}
             className="text-sm font-medium text-[#1565C0] hover:text-[#0D47A1] hover:underline"
@@ -286,9 +413,9 @@ const OrganisationCard = ({ org }: { org: OrganisationContact }) => {
 
         {/* Website */}
         <div className="mb-4">
-          <div className="text-[10px] font-bold tracking-widest text-gray-500 uppercase mb-1">
+          <FieldLabel icon={ICONS.globe} accentClass="text-[#2E7D32]">
             Website
-          </div>
+          </FieldLabel>
           <a
             href={org.website.url}
             target="_blank"
@@ -302,9 +429,9 @@ const OrganisationCard = ({ org }: { org: OrganisationContact }) => {
         {/* Contact form — most government departments publish a web
             form rather than a public enquiries inbox. */}
         <div className="mb-4">
-          <div className="text-[10px] font-bold tracking-widest text-gray-500 uppercase mb-1">
+          <FieldLabel icon={ICONS.mail} accentClass="text-[#2E7D32]">
             Contact form
-          </div>
+          </FieldLabel>
           <a
             href={org.contactForm.url}
             target="_blank"
@@ -317,17 +444,19 @@ const OrganisationCard = ({ org }: { org: OrganisationContact }) => {
 
         {/* Relevant links — pinned to the bottom of the card so the
             block lines up visually with PersonCard's extra-affiliation
-            block. Hidden entirely when there are no links to show. */}
+            block. Hidden entirely when there are no links to show.
+            Each pill lifts subtly on hover to mirror the card-level
+            hover affordance. */}
         {org.relevantLinks.length > 0 && (
           <div className="mt-auto pt-5 border-t border-gray-200">
-            <div className="text-[10px] font-bold tracking-widest text-gray-500 uppercase mb-2">
+            <FieldLabel icon={ICONS.link} accentClass="text-[#2E7D32]">
               Relevant links
-            </div>
-            <ul className="space-y-2">
+            </FieldLabel>
+            <ul className="space-y-2 mt-1">
               {org.relevantLinks.map((link) => (
                 <li
                   key={link.url}
-                  className="rounded-lg bg-[#F0EDE8] px-3 py-2.5"
+                  className="rounded-lg bg-[#F0EDE8] px-3 py-2.5 hover:bg-[#E8E3DA] transition-colors"
                 >
                   <a
                     href={link.url}
