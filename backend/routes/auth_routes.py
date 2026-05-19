@@ -3,6 +3,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from services.db import get_db_connection
 import re
 import secrets
+import os
 
 
 auth_bp = Blueprint("auth", __name__, url_prefix="/api")
@@ -12,6 +13,18 @@ def is_valid_email(email):
     email_pattern = r"^[\w\.-]+@[\w\.-]+\.\w+$"
     return re.match(email_pattern, email) is not None
 
+def validate_admin_secret():
+    expected_secret = os.environ.get("ADMIN_REGISTER_SECRET")
+    provided_secret = request.headers.get("X-Admin-Secret", "")
+
+    if not expected_secret:
+        return jsonify({"error": "Admin registration secret is not configured"}), 500
+
+    if provided_secret != expected_secret:
+        return jsonify({"error": "Admin registration secret is invalid or missing"}), 403
+
+    return None
+
 
 def create_demo_token(user_id):
     return f"demo-token-{user_id}-{secrets.token_urlsafe(16)}"
@@ -19,6 +32,10 @@ def create_demo_token(user_id):
 
 @auth_bp.route("/register", methods=["POST"])
 def register():
+    secret_error = validate_admin_secret()
+    if secret_error:
+        return secret_error
+
     data = request.get_json()
 
     if data is None:
@@ -26,6 +43,7 @@ def register():
 
     email = data.get("email", "").strip().lower()
     password = data.get("password", "")
+    role = str(data.get("role", "user")).strip().lower()
 
     if not email:
         return jsonify({"error": "Email is required"}), 400
@@ -38,6 +56,9 @@ def register():
 
     if len(password) < 6:
         return jsonify({"error": "Password must be at least 6 characters long"}), 400
+    
+    if role not in ("admin", "user", "viewer"):
+        return jsonify({"error": "Role must be admin, user, or viewer"}), 400
 
     password_hash = generate_password_hash(password)
 
@@ -58,7 +79,7 @@ def register():
             INSERT INTO users (email, password_hash, role)
             VALUES (?, ?, ?)
             """,
-            (email, password_hash, "user"),
+            (email, password_hash, role),
         )
 
         conn.commit()
@@ -70,7 +91,7 @@ def register():
             "user": {
                 "id": user_id,
                 "email": email,
-                "role": "user"
+                "role": role
             }
         }), 201
 

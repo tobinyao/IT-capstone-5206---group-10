@@ -249,10 +249,10 @@ const Login = () => {
               />
             </div>
 
-            {/* Forgot */}
+            {/* Password help */}
             <div className="text-right mb-6">
-              <span className="text-xs text-gray-400 cursor-pointer hover:text-gray-600 transition-colors">
-                Forgot password?
+              <span className="text-xs text-gray-400">
+                Contact administrator to reset password
               </span>
             </div>
 
@@ -296,12 +296,8 @@ const Login = () => {
 
           {/* Footer note */}
           <p className="text-center text-xs text-gray-300 mt-6 leading-relaxed">
-           Do not have an account?{' '}
-           <Link to="/register" className="font-bold text-gray-700 hover:text-gray-900">
-            Create account
-           </Link>
-           <br />
-            Access is restricted to authorised personnel.
+            Access is restricted to authorised internal personnel.<br />
+            Accounts are created by the project administrator.
           </p>
         </div>
       </div>
