@@ -8,10 +8,7 @@ import HeritagRegistry from './pages/HeritagRegistry'
 import SiteAssessment from './pages/SiteAssessment'
 import Login from './pages/Login'
 import MitigationGuide from './pages/MitigationGuide'
-<<<<<<< HEAD
-=======
 import LocalContacts from './pages/LocalContacts'
->>>>>>> origin/main
 
 const MainLayout = () => {
   return (
