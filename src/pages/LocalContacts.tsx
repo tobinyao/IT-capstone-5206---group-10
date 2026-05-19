@@ -113,16 +113,34 @@ const contactSections: ReadonlyArray<ContactSection> = [
     id: 'government-regulatory',
     heading: 'Government & Regulatory',
     entries: [
+      // DBCA Albany office — Parks and Wildlife Service, South Coast
+      // Region. Added per client feedback ("Contact should have DBCA
+      // Albany"). This is the only DBCA contact surfaced because the
+      // tool is Franklin-District-specific and the South Coast Region
+      // is the team that actually runs prescribed burns and on-ground
+      // conservation across Albany / Mt Barker / Denmark — users with
+      // a heritage-fire question reach the right people fastest by
+      // calling Albany directly. The Perth headquarters entry was
+      // removed in the same change to avoid two near-identical DBCA
+      // cards (same website, contact form, and "Today's burns" link
+      // as Albany, differing only by a general-enquiries phone number
+      // that just routes back out to regional offices). Users who do
+      // need to reach Perth HQ for policy / complaints can still find
+      // it from dbca.wa.gov.au below.
+      //
+      // Contact details verified via the public Google Maps listing
+      // for "DBCA's Parks and Wildlife Service – South Coast Region",
+      // 120 Albany Hwy, Centennial Park WA 6330.
       {
         kind: 'organisation',
-        id: 'dbca',
+        id: 'dbca-albany',
         orgName:
-          'Department of Biodiversity, Conservation and Attractions',
-        affiliation: 'Government of Western Australia',
-        badgeLabel: 'Government Agency',
+          "DBCA's Parks and Wildlife Service – South Coast Region",
+        affiliation: 'Government of Western Australia · Albany',
+        badgeLabel: 'Parks & Wildlife · Albany',
         phone: {
-          number: '(08) 9219 9000',
-          note: 'General enquiries · Mon–Fri',
+          number: '(08) 9842 4500',
+          note: 'Albany office · Mon–Fri',
         },
         website: {
           url: 'https://www.dbca.wa.gov.au',
