@@ -1,5 +1,24 @@
 import type { ReactNode } from 'react'
+import { MapContainer, TileLayer, CircleMarker, Tooltip, Rectangle } from 'react-leaflet'
 import { Link } from 'react-router-dom'
+
+// Outer bounding box of the project's Franklin District (FRK) study
+// area, taken from `analysis_bounds_epsg_7844` in
+// public/data/processed/metadata.json and rounded to four decimal
+// places so the rectangle drawn on the page lines up with the FRK
+// outline rendered on the Risk Map. Used by every ServiceAreaMap as
+// the dashed context frame, with each office's coverageBounds drawn
+// as a filled subset inside it.
+//
+// Naming caveat: the project uses "Franklin District" (with an 'i')
+// for FRK; DBCA happens to have an internal admin unit called
+// "Frankland District" (with an 'a') headquartered in Walpole that
+// manages the western part of FRK. The two are unrelated — same
+// English root, different spellings, different scope.
+const FRK_STUDY_BOUNDS: [[number, number], [number, number]] = [
+  [-35.2039, 116.8987],
+  [-34.1958, 118.012],
+]
 
 // Extra organisation that a person is also affiliated with (e.g. WKSN
 // for Sean). Rendered as a small logo + name block at the bottom of a
@@ -40,6 +59,15 @@ type RelevantLink = {
 // `address` is optional because not every organisation card needs to
 // surface a physical office — when present, it renders as a "View on
 // map" line in the card with `mapUrl` pointing at Google Maps.
+//
+// `serviceArea` is independent of `address` on purpose: an office can
+// sit in one city (Albany) while operationally serving a different
+// region (Franklin District). When supplied, the page renderer drops
+// in a companion ServiceAreaMap card beside the OrganisationCard,
+// showing where the team's work happens rather than the street where
+// the front door is — the address itself is already a Google Maps
+// deep link on the main card, so the inline map adds the bigger
+// picture.
 type OrganisationContact = {
   kind: 'organisation'
   id: string
@@ -50,10 +78,26 @@ type OrganisationContact = {
     line: string
     mapUrl: string
   }
+  // The subset of FRK_STUDY_BOUNDS this office actually administers.
+  // Each ServiceAreaMap always draws the full FRK rectangle as a
+  // dashed outline for context, then fills `coverageBounds` with
+  // `coverageColor` to make it clear which slice of the study area
+  // the office is responsible for. Optional because non-spatial
+  // organisations would not have a meaningful coverage box.
+  serviceArea?: {
+    label: string
+    coverageBounds: [[number, number], [number, number]]
+    coverageColor: string
+  }
   phone: {
     number: string
     note?: string
   }
+  // Optional direct-to-team email address. Some DBCA district offices
+  // publish a team mailbox (e.g. frankland.district@dbca.wa.gov.au)
+  // while others only publish a switchboard number, so this is left
+  // optional rather than required.
+  email?: string
   website: {
     url: string
     display: string
@@ -122,19 +166,20 @@ const contactSections: ReadonlyArray<ContactSection> = [
     heading: 'Government & Regulatory',
     entries: [
       // DBCA Albany office — Parks and Wildlife Service, South Coast
-      // Region. Added per client feedback ("Contact should have DBCA
-      // Albany"). This is the only DBCA contact surfaced because the
-      // tool is Franklin-District-specific and the South Coast Region
-      // is the team that actually runs prescribed burns and on-ground
-      // conservation across Albany / Mt Barker / Denmark — users with
-      // a heritage-fire question reach the right people fastest by
-      // calling Albany directly. The Perth headquarters entry was
-      // removed in the same change to avoid two near-identical DBCA
-      // cards (same website, contact form, and "Today's burns" link
-      // as Albany, differing only by a general-enquiries phone number
-      // that just routes back out to regional offices). Users who do
-      // need to reach Perth HQ for policy / complaints can still find
-      // it from dbca.wa.gov.au below.
+      // Region, Albany District. Added per client feedback ("Contact
+      // should have DBCA Albany"). Covers the EASTERN portion of FRK:
+      // Stirling Range National Park, Mt Barker / Plantagenet,
+      // Albany, Denmark, Wilson Inlet, Porongurup. DBCA's published
+      // boundary places South Coast Region from Irwin Inlet (near
+      // Walpole) east to the South Australian border, so the FRK
+      // east-of-117.30 strip falls cleanly inside it. The Perth
+      // headquarters entry was removed in an earlier commit to avoid
+      // two near-identical DBCA cards — users who do need Perth HQ
+      // for policy / complaints can still find it from dbca.wa.gov.au.
+      //
+      // Western FRK (Mt Roe NP, Mt Lindesay NP) is handled by the
+      // separate Frankland District (Walpole) entry below, not by
+      // Albany.
       //
       // Contact details verified via the public Google Maps listing
       // for "DBCA's Parks and Wildlife Service – South Coast Region",
@@ -155,6 +200,23 @@ const contactSections: ReadonlyArray<ContactSection> = [
           mapUrl:
             'https://www.google.com/maps/search/?api=1&query=120+Albany+Hwy%2C+Centennial+Park+WA+6330',
         },
+        // Coverage subset of FRK: everything east of approx. lng
+        // 117.30 — Stirling Range, Porongurup, Mt Barker, Albany,
+        // Denmark. The 117.30 split is a longitude approximation of
+        // the real DBCA administrative boundary, which runs through
+        // the area between Mt Lindesay (Frankland District, lng ~117.20)
+        // and Denmark (Albany District, lng ~117.35). For an exact
+        // polygon the project could pull DBCA-022 / DBCA-023 from
+        // data.wa.gov.au, but the approximation is well within the
+        // resolution of a mini map at this size.
+        serviceArea: {
+          label: 'Albany District',
+          coverageBounds: [
+            [-35.2039, 117.3],
+            [-34.1958, 118.012],
+          ],
+          coverageColor: '#2E7D32',
+        },
         phone: {
           number: '(08) 9842 4500',
           note: 'Albany office · Mon–Fri',
@@ -172,6 +234,73 @@ const contactSections: ReadonlyArray<ContactSection> = [
             label: "Today's burns",
             url: 'https://www.dbca.wa.gov.au/management/fire/prescribed-burning/todays-burns',
             description: 'Current prescribed burn program updates',
+          },
+        ],
+      },
+      // DBCA Frankland District office (Walpole) — Parks and Wildlife
+      // Service, Warren Region. Added in tandem with the Albany card
+      // because FRK actually straddles two DBCA regions: Albany handles
+      // the eastern half, Frankland handles the western half. The
+      // "Walpole Wilderness" group of seven national parks (Walpole-
+      // Nornalup, Mt Frankland, Shannon, Mt Frankland South / North,
+      // Mt Roe, Mt Lindesay) is administered here, and Mt Roe NP plus
+      // Mt Lindesay NP both fall inside FRK's western edge — so a user
+      // calling about an incident in those parks needs Walpole, not
+      // Albany.
+      //
+      // Naming caveat: this is DBCA's "Frankland" District (with an
+      // 'a'), unrelated to the project's "Franklin" District (FRK,
+      // with an 'i'). Same English root, different spellings; do not
+      // collapse them in copy.
+      //
+      // Contact details verified against the DBCA office locations
+      // page and the public Frankland District directory listings.
+      {
+        kind: 'organisation',
+        id: 'dbca-frankland',
+        orgName:
+          "DBCA's Parks and Wildlife Service – Frankland District",
+        affiliation: 'Government of Western Australia · Walpole',
+        badgeLabel: 'Parks & Wildlife · Walpole',
+        address: {
+          line: 'South Coast Hwy, Walpole WA 6398',
+          mapUrl:
+            'https://www.google.com/maps/search/?api=1&query=South+Coast+Hwy%2C+Walpole+WA+6398',
+        },
+        // Coverage subset of FRK: everything west of approx. lng
+        // 117.30 — Mt Roe NP and Mt Lindesay NP (both part of the
+        // Walpole Wilderness group). Same longitude approximation as
+        // the Albany card's eastern half — see that card's serviceArea
+        // comment for the exact admin-boundary caveat. Coverage colour
+        // is a warm brown so the two regions are visually distinct on
+        // the map even though both cards share the green DBCA chrome.
+        serviceArea: {
+          label: 'Frankland District',
+          coverageBounds: [
+            [-35.2039, 116.8987],
+            [-34.1958, 117.3],
+          ],
+          coverageColor: '#6D4C41',
+        },
+        phone: {
+          number: '(08) 9840 0400',
+          note: 'Walpole office · Mon–Fri',
+        },
+        email: 'frankland.district@dbca.wa.gov.au',
+        website: {
+          url: 'https://www.dbca.wa.gov.au',
+          display: 'dbca.wa.gov.au',
+        },
+        contactForm: {
+          url: 'https://www.dbca.wa.gov.au/contact-us',
+          display: 'dbca.wa.gov.au/contact-us',
+        },
+        relevantLinks: [
+          {
+            label: 'Walpole Wilderness management plan',
+            url: 'https://www.dbca.wa.gov.au/media/1389/download',
+            description:
+              'Statutory plan covering the seven Walpole Wilderness national parks',
           },
         ],
       },
@@ -237,6 +366,12 @@ const ICONS = {
     <>
       <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
       <polyline points="22,6 12,13 2,6" />
+    </>
+  ),
+  clipboard: (
+    <>
+      <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
+      <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
     </>
   ),
   link: (
@@ -411,6 +546,24 @@ const OrganisationCard = ({ org }: { org: OrganisationContact }) => {
           )}
         </div>
 
+        {/* Email — only rendered when the org publishes a direct
+            mailbox (some district offices do, some only publish a
+            switchboard number). Uses the same envelope icon as the
+            PersonCard's Email field so the visual language matches. */}
+        {org.email && (
+          <div className="mb-4">
+            <FieldLabel icon={ICONS.mail} accentClass="text-[#2E7D32]">
+              Email
+            </FieldLabel>
+            <a
+              href={`mailto:${org.email}`}
+              className="text-sm font-medium text-[#1565C0] hover:text-[#0D47A1] hover:underline break-all"
+            >
+              {org.email}
+            </a>
+          </div>
+        )}
+
         {/* Website */}
         <div className="mb-4">
           <FieldLabel icon={ICONS.globe} accentClass="text-[#2E7D32]">
@@ -427,9 +580,11 @@ const OrganisationCard = ({ org }: { org: OrganisationContact }) => {
         </div>
 
         {/* Contact form — most government departments publish a web
-            form rather than a public enquiries inbox. */}
+            form rather than a public enquiries inbox. Uses a clipboard
+            icon (not envelope) so it stays visually distinct from the
+            direct-email row above when both are present. */}
         <div className="mb-4">
-          <FieldLabel icon={ICONS.mail} accentClass="text-[#2E7D32]">
+          <FieldLabel icon={ICONS.clipboard} accentClass="text-[#2E7D32]">
             Contact form
           </FieldLabel>
           <a
@@ -481,6 +636,138 @@ const OrganisationCard = ({ org }: { org: OrganisationContact }) => {
   )
 }
 
+// Companion card to OrganisationCard: a display-only Leaflet mini map
+// showing the region the organisation services, not its street address.
+// The street address is already a Google Maps deep link on the main
+// OrganisationCard, so this map covers the bigger picture — for
+// example, the Albany office sits in Albany city but services the
+// whole Franklin District, and that is what the pin/zoom reflects.
+//
+// All Leaflet interactions are disabled (dragging, wheel zoom, double
+// click zoom, touch zoom, keyboard, zoom control) so the map is purely
+// informational and never accidentally panned when scrolling the page.
+// The same display-only pattern is used on the Login page's "FRK
+// Location" mini map; the styling here matches OrganisationCard
+// (rounded corners, same green header bar, same hover lift, same
+// top-right pill badge) so the pair reads as one visual unit.
+const ServiceAreaMap = ({
+  coverageBounds,
+  coverageColor,
+  label,
+}: {
+  coverageBounds: [[number, number], [number, number]]
+  coverageColor: string
+  label: string
+}) => {
+  // Pin sits at the centre of the office's coverage area (not the
+  // centre of the whole FRK study area), so the label clearly belongs
+  // to that office's slice. Computed here rather than stored on the
+  // data because it is purely derived.
+  const [[south, west], [north, east]] = coverageBounds
+  const center: [number, number] = [
+    (south + north) / 2,
+    (west + east) / 2,
+  ]
+
+  return (
+    <article className="relative bg-white rounded-2xl shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 overflow-hidden flex flex-col">
+      {/* Header colour bar — green to match the OrganisationCard it
+          sits beside, so the two cards visually belong together. */}
+      <div className="h-3 w-full bg-[#2E7D32]" />
+
+      {/* "Coverage" pill badge — mirrors the OrganisationCard's
+          top-right badge so the two cards share an identical
+          structural rhythm. The label is intentionally "Coverage" and
+          not "Service Area" because the rectangle drawn below is the
+          slice of FRK this office covers, not DBCA's full operational
+          jurisdiction (which extends well beyond FRK).
+          z-index lifts the badge above Leaflet's own panes (default
+          starts around 400). */}
+      <span className="absolute top-6 right-5 z-[1000] text-[10px] font-black uppercase tracking-widest bg-[#2E7D32] text-white px-2.5 py-1 rounded-full">
+        FRK Coverage
+      </span>
+
+      {/* Map fills the remaining vertical space (flex-1) so the card
+          stretches to match the height of its sibling OrganisationCard
+          inside the CSS Grid (default align-items: stretch). The map
+          is always fit to the FULL FRK study-area bounds (not just the
+          office's coverageBounds) so the user can see this office's
+          slice in the context of the whole project area. */}
+      <div className="flex-1 p-3 flex">
+        <MapContainer
+          bounds={FRK_STUDY_BOUNDS}
+          boundsOptions={{ padding: [12, 12] }}
+          scrollWheelZoom={false}
+          dragging={false}
+          doubleClickZoom={false}
+          touchZoom={false}
+          keyboard={false}
+          zoomControl={false}
+          attributionControl={false}
+          style={{
+            height: '100%',
+            width: '100%',
+            minHeight: 420,
+            borderRadius: 12,
+            background: '#eef0e5',
+          }}
+        >
+          <TileLayer
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            attribution='&copy; OpenStreetMap contributors'
+          />
+          {/* Outer dashed rectangle outlining the full FRK study area.
+              Stroke style mirrors the FRK rectangle drawn on the Risk
+              Map page so the same area reads identically in both
+              places. Drawn underneath the coverage fill so the
+              coverage rectangle's solid edge sits on top. */}
+          <Rectangle
+            bounds={FRK_STUDY_BOUNDS}
+            pathOptions={{
+              color: '#202124',
+              weight: 2,
+              fillOpacity: 0,
+              dashArray: '6 4',
+            }}
+          />
+          {/* This office's coverage slice of FRK, filled with the
+              office-specific colour at low opacity so the underlying
+              basemap detail still shows through. Stroke uses the same
+              colour at full opacity for a clear edge. */}
+          <Rectangle
+            bounds={coverageBounds}
+            pathOptions={{
+              color: coverageColor,
+              weight: 2,
+              fillColor: coverageColor,
+              fillOpacity: 0.28,
+            }}
+          />
+          {/* Centre marker carries the permanent Tooltip label, sat at
+              the centre of THIS office's coverage rectangle. CircleMarker
+              avoids the Vite/Leaflet default-icon asset issue and
+              matches the red accent used elsewhere in the project for
+              focal-point pins. */}
+          <CircleMarker
+            center={center}
+            radius={7}
+            pathOptions={{
+              color: '#ffffff',
+              weight: 2,
+              fillColor: '#B03A2E',
+              fillOpacity: 1,
+            }}
+          >
+            <Tooltip permanent direction="bottom" offset={[0, 8]}>
+              {label}
+            </Tooltip>
+          </CircleMarker>
+        </MapContainer>
+      </div>
+    </article>
+  )
+}
+
 const LocalContacts = () => {
   return (
     <div
@@ -500,32 +787,56 @@ const LocalContacts = () => {
       {/* Contact sections — each section renders a heading followed by
           its own grid of cards. Iterating over `contactSections` keeps
           the page easily extensible: new groups (e.g. government,
-          emergency services) only need a new entry in the data array. */}
-      {contactSections.map((section) => (
-        <section key={section.id} className="w-full max-w-5xl mb-10">
-          <h2 className="text-sm font-black uppercase tracking-[0.25em] text-gray-700 mb-4">
-            {section.heading}
-          </h2>
-          {/* Single-entry sections are centred and constrained so the
-              lone card does not float awkwardly in one half of an
-              otherwise empty 2-column grid. */}
-          <div
-            className={
-              section.entries.length === 1
-                ? 'grid grid-cols-1 gap-6 md:max-w-lg md:mx-auto'
-                : 'grid grid-cols-1 md:grid-cols-2 gap-6'
-            }
-          >
-            {section.entries.map((entry) =>
-              entry.kind === 'person' ? (
-                <PersonCard key={entry.email} person={entry} />
-              ) : (
-                <OrganisationCard key={entry.id} org={entry} />
-              ),
-            )}
-          </div>
-        </section>
-      ))}
+          emergency services) only need a new entry in the data array.
+          Each entry can also expand into more than one card at render
+          time — an organisation with a `serviceArea` yields the
+          OrganisationCard AND a companion ServiceAreaMap so the grid
+          stays balanced even when a section logically has only one
+          entry. */}
+      {contactSections.map((section) => {
+        const renderedCards = section.entries.flatMap((entry) => {
+          if (entry.kind === 'person') {
+            return [<PersonCard key={entry.email} person={entry} />]
+          }
+          const cards = [
+            <OrganisationCard key={entry.id} org={entry} />,
+          ]
+          if (entry.serviceArea) {
+            cards.push(
+              <ServiceAreaMap
+                key={`${entry.id}-map`}
+                coverageBounds={entry.serviceArea.coverageBounds}
+                coverageColor={entry.serviceArea.coverageColor}
+                label={entry.serviceArea.label}
+              />,
+            )
+          }
+          return cards
+        })
+
+        return (
+          <section key={section.id} className="w-full max-w-5xl mb-10">
+            <h2 className="text-sm font-black uppercase tracking-[0.25em] text-gray-700 mb-4">
+              {section.heading}
+            </h2>
+            {/* Single-card sections are centred and constrained so the
+                lone card does not float awkwardly in one half of an
+                otherwise empty 2-column grid. The decision is based on
+                the post-flatMap count, not section.entries.length, so
+                a single org that expanded to a card+map pair is still
+                rendered as a balanced two-column row. */}
+            <div
+              className={
+                renderedCards.length === 1
+                  ? 'grid grid-cols-1 gap-6 md:max-w-lg md:mx-auto'
+                  : 'grid grid-cols-1 md:grid-cols-2 gap-6'
+              }
+            >
+              {renderedCards}
+            </div>
+          </section>
+        )
+      })}
 
       {/* Back link */}
       <Link
