@@ -30,6 +30,7 @@ The tool combines a Leaflet-based risk map, model-driven site assessments, a her
 │   ├── backend/          pytest
 │   └── e2e/              Playwright
 ├── .env.example          Frontend env template (VITE_API_BASE_URL)
+├── backend/.env.example  Backend env template (ADMIN_REGISTER_SECRET)
 └── package.json / vite.config.ts / tailwind.config.js / tsconfig.*
 ```
 
@@ -88,6 +89,12 @@ cp .env.example .env.local        # leave VITE_API_BASE_URL empty for local dev
 - **empty** → same origin (use this for local dev; Vite forwards to the backend, or you run the bundle behind a reverse proxy)
 - `https://api.example.com` → point at a remote backend
 
+For the current hosted Render deployment, set:
+
+```env
+VITE_API_BASE_URL=https://firewatch-heritage-api.onrender.com
+```
+
 ### 4.2 Backend (Python virtual environment)
 
 ```bash
@@ -95,6 +102,20 @@ python3 -m venv .venv
 source .venv/bin/activate          # Windows: .venv\Scripts\activate
 python3 -m pip install --upgrade pip
 python3 -m pip install flask flask-cors werkzeug
+```
+
+Backend environment variables:
+
+- `ADMIN_REGISTER_SECRET`
+  - Internal secret for `POST /api/register`
+  - Requests must send the same value in the `X-Admin-Secret` header
+  - If unset, the register endpoint returns `500`
+  - If set but the header is missing or wrong, the register endpoint returns `403`
+
+Example:
+
+```env
+ADMIN_REGISTER_SECRET=replace-with-your-internal-secret
 ```
 
 > A `requirements.txt` is **not** currently committed. If you prefer reproducible installs, freeze the env once:
@@ -145,6 +166,17 @@ npm run preview    # Serve dist/ on http://127.0.0.1:4173 to sanity-check
 ```
 
 The Flask backend can be served behind any WSGI server (gunicorn / uwsgi) in production. The built frontend (`dist/`) is static and can be served by any web server or CDN; configure it to proxy `/api/*` to the backend, or set `VITE_API_BASE_URL` at build time to point at a public backend origin.
+
+### Production environment variables
+
+Set these in your hosting provider before redeploying:
+
+- Frontend:
+  - `VITE_API_BASE_URL=https://firewatch-heritage-api.onrender.com`
+- Backend:
+  - `ADMIN_REGISTER_SECRET=<your internal secret key>`
+
+After changing either value, redeploy or restart both services so the new configuration is picked up.
 
 ---
 
