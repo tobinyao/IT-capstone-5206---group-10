@@ -144,6 +144,17 @@ def seed_demo_user(connection: sqlite3.Connection) -> int:
             "user",
         ),
     )
+    connection.execute(
+        """
+        INSERT OR IGNORE INTO users (email, password_hash, role)
+        VALUES (?, ?, ?)
+        """,
+        (
+            "frontenddemo2@example.com",
+            generate_password_hash("123456"),
+            "user",
+        ),
+    )
     row = connection.execute(
         "SELECT id FROM users WHERE email = ?",
         ("demo@firewatch.local",),
