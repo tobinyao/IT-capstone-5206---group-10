@@ -9,6 +9,8 @@ import sqlite3
 from pathlib import Path
 from typing import Any
 
+from werkzeug.security import generate_password_hash
+
 
 BACKEND_DIR = Path(__file__).resolve().parents[1]
 REPO_DIR = BACKEND_DIR.parent
@@ -131,11 +133,27 @@ def seed_demo_user(connection: sqlite3.Connection) -> int:
         """,
         ("demo@firewatch.local", None, "admin"),
     )
+    connection.execute(
+        """
+        INSERT OR IGNORE INTO users (email, password_hash, role)
+        VALUES (?, ?, ?)
+        """,
+        (
+            "frontendtest@example.com",
+            generate_password_hash("123456"),
+            "user",
+        ),
+    )
     row = connection.execute(
         "SELECT id FROM users WHERE email = ?",
         ("demo@firewatch.local",),
     ).fetchone()
     return int(row["id"])
+
+
+def count_users(connection: sqlite3.Connection) -> int:
+    row = connection.execute("SELECT COUNT(*) FROM users").fetchone()
+    return int(row[0]) if row is not None else 0
 
 
 def seed_heritage_sites(
@@ -365,7 +383,7 @@ def seed_database(
 
         created_by = seed_demo_user(connection)
         counts = {
-            "users": 1,
+            "users": count_users(connection),
             "heritage_sites": seed_heritage_sites(connection, heritage_path, created_by),
             "burn_options": seed_burn_options(connection, burn_options_path),
             "granite_polygons": seed_granite_polygons(connection, granite_path),
